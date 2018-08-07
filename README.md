@@ -5,8 +5,8 @@ Licence
 Installation guide
 ==================
 
-Preparing prerequisites
------------------------
+Prerequisites
+-------------
 
 ### Install boost
     $ sudo apt-get install libboost-dev
