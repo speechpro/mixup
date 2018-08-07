@@ -25,10 +25,9 @@ Building project
     
     $ cd mixup
 
-### Register submodule Kaldi
+### Clone Kaldi submodule
     $ git submodule init
-
-### Clone submodule Kaldi
+    
     $ git submodule update
 
 ### Build Kaldi dependencies
