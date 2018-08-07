@@ -21,7 +21,7 @@ Building project
 ----------------
 
 ### Clone mixup project repository
-    $ git clone https://github.com/speechpro/mixup.git
+    $ git clone [https://github.com/speechpro/mixup.git](https://github.com/speechpro/mixup.git)
     
     $ cd mixup
 
