@@ -18,7 +18,7 @@ Preparing prerequisites
     $ sudo apt-get install git
 
 Building project
-================
+----------------
 
 ### Clone mixup project repository
     $ git clone https://github.com/speechpro/mixup.git
