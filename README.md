@@ -9,55 +9,66 @@ Preparing prerequisites
 -----------------------
 
 ### Install boost
-sudo apt-get install libboost-dev
+    $ sudo apt-get install libboost-dev
 
 ### Install CMake
-sudo apt-get install cmake
+    $ sudo apt-get install cmake
 
 ### Install git
-sudo apt-get install git
+    $ sudo apt-get install git
 
 Building project
 ================
 
 ### Clone mixup project repository
-git clone https://github.com/speechpro/mixup.git
-cd mixup
+    $ git clone https://github.com/speechpro/mixup.git
+    
+    $ cd mixup
 
 ### Register submodule Kaldi
-git submodule init
+    $ git submodule init
 
 ### Clone submodule Kaldi
-git submodule update
+    $ git submodule update
 
 ### Build Kaldi dependencies
-cd kaldi/tools
-make
+    $ cd kaldi/tools
+    
+    $ make
 
-Or if you want to speedup the building process run: make -j $(nproc)
+or if you want to speedup the building process run:
+
+    $ make -j $(nproc)
+
 In case of errors or if you want to check the prerequisites for Kaldi see INSTALL file.
 
 ### Build Kaldi
-cd ../src
-./configure --shared
-make depend -j $(nproc)
-make -j $(nproc)
+    $ cd ../src
+    
+    $ ./configure --shared
+    
+    $ make depend -j $(nproc)
+    
+    $ make -j $(nproc)
+    
 In case of errors or for additinal  see INSTALL file.
 
 ### Generate mixup project
-cd ../..
-mkdir build
-cd build
-cmake ..
+    $ cd ../..
+    
+    $ mkdir build
+    
+    $ cd build
+    
+    $ cmake ..
 
 ### Build mixup modules
-make -j $(nproc)
+    $ make -j $(nproc)
 
 ### Install mixup modules
-make install
+    $ make install
+    
 This operation will place mixup modules in to the corresponding Kaldi binary folders.
 
 How to use
 ==========
-
-
