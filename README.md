@@ -51,7 +51,7 @@ In case of errors or if you want to check the prerequisites for Kaldi see INSTAL
     
     $ make -j $(nproc)
     
-In case of errors or for additinal  see INSTALL file.
+In case of errors or for additinal building options see INSTALL file.
 
 ### Generate mixup project
     $ cd ../..
