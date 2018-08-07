@@ -1,6 +1,6 @@
 Licence
 -------
-Apache 2.0
+[Apache 2.0](https://github.com/speechpro/mixup/blob/master/LICENSE)
 
 Installation guide
 ==================
