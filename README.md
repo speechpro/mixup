@@ -33,6 +33,7 @@ git submodule update
 ### Build Kaldi dependencies
 cd kaldi/tools
 make
+
 Or if you want to speedup the building process run: make -j $(nproc)
 In case of errors or if you want to check the prerequisites for Kaldi see INSTALL file.
 
