@@ -9,7 +9,7 @@ Prerequisites
 -------------
 
 ### Install boost
-    $ sudo apt-get install libboost-dev
+    $ sudo apt-get install libboost-all-dev
 
 ### Install CMake
     $ sudo apt-get install cmake
