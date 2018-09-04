@@ -73,6 +73,7 @@ How to use
 ==========
 
 Utilities nnet3-mixup-egs and nnet3-chain-mixup-egs are intended to be used instead of nnet3-copy-egs and nnet3-chain-copy-egs in training scripts. In order to use mixup utilities you should replace nnet3-copy-egs and/or nnet3-chain-copy-egs here
+
 https://github.com/kaldi-asr/kaldi/blob/master/egs/wsj/s5/steps/libs/nnet3/train/frame_level_objf/common.py
 line ~122
 ```
@@ -83,6 +84,7 @@ with
 ark,bg:nnet3-mixup-egs {frame_opts} {multitask_egs_opts}
 ```
 and here
+
 https://github.com/kaldi-asr/kaldi/blob/master/egs/wsj/s5/steps/libs/nnet3/train/chain_objf/acoustic_model.py
 line ~199
 ```
