@@ -69,7 +69,7 @@ In case of errors or for additinal building options see INSTALL file.
     
 This operation will place mixup modules in to the corresponding Kaldi binary folders.
 
-Probably, you will have to add line
+You may need to add line
 ```
 export LD_LIBRARY_PATH=$KALDI_ROOT/src/lib:$KALDI_ROOT/tools/openfst/lib:$LD_LIBRARY_PATH
 ```
