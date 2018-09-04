@@ -75,6 +75,7 @@ How to use
 Utilities nnet3-mixup-egs and nnet3-chain-mixup-egs are intended to be used instead of nnet3-copy-egs and nnet3-chain-copy-egs in training scripts. In order to use mixup utilities you should replace nnet3-copy-egs and/or nnet3-chain-copy-egs here
 
 https://github.com/kaldi-asr/kaldi/blob/master/egs/wsj/s5/steps/libs/nnet3/train/frame_level_objf/common.py
+
 line ~122
 ```
 ark,bg:nnet3-copy-egs {frame_opts} {multitask_egs_opts}
@@ -86,6 +87,7 @@ ark,bg:nnet3-mixup-egs {frame_opts} {multitask_egs_opts}
 and here
 
 https://github.com/kaldi-asr/kaldi/blob/master/egs/wsj/s5/steps/libs/nnet3/train/chain_objf/acoustic_model.py
+
 line ~199
 ```
 ark,bg:nnet3-chain-copy-egs {multitask_egs_opts}
@@ -98,7 +100,7 @@ respectively.
 
 Supported parameters
 ====================
-Mixup utilities have a number of parameters and modes of operation. In order to simplify their embeding all parameters can be passed in two ways: in command line and as environment variables.
+Mixup utilities have a number of parameters and modes of operation. In order to simplify their embedding all parameters can be passed in two ways: in command line and as environment variables.
 
 ### nnet3-mixup-egs
 |Command line|Environment variable|Allowable values|Meaning|
