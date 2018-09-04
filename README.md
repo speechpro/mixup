@@ -69,6 +69,12 @@ In case of errors or for additinal building options see INSTALL file.
     
 This operation will place mixup modules in to the corresponding Kaldi binary folders.
 
+Probably, you will have to add line
+```
+export LD_LIBRARY_PATH=$KALDI_ROOT/src/lib:$KALDI_ROOT/tools/openfst/lib:$LD_LIBRARY_PATH
+```
+in your ``path.sh``.
+
 How to use
 ==========
 
@@ -76,7 +82,7 @@ Utilities nnet3-mixup-egs and nnet3-chain-mixup-egs are intended to be used inst
 
 https://github.com/kaldi-asr/kaldi/blob/master/egs/wsj/s5/steps/libs/nnet3/train/frame_level_objf/common.py
 
-method train_new_models(), line ~122
+method **``train_new_models()``**, line ~122
 ```
 ark,bg:nnet3-copy-egs {frame_opts} {multitask_egs_opts}
 ```
@@ -88,7 +94,7 @@ and here
 
 https://github.com/kaldi-asr/kaldi/blob/master/egs/wsj/s5/steps/libs/nnet3/train/chain_objf/acoustic_model.py
 
-method train_new_models(), line ~199
+method **``train_new_models()``**, line ~199
 ```
 ark,bg:nnet3-chain-copy-egs {multitask_egs_opts}
 ```
