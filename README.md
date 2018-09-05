@@ -80,7 +80,7 @@ How to use
 
 Utilities nnet3-mixup-egs and nnet3-chain-mixup-egs are intended to be used instead of nnet3-copy-egs and nnet3-chain-copy-egs in Kaldi training scripts. In order to use mixup utilities you should replace nnet3-copy-egs and/or nnet3-chain-copy-egs here
 
-https://github.com/kaldi-asr/kaldi/blob/master/egs/wsj/s5/steps/libs/nnet3/train/frame_level_objf/common.py
+[common.py, rev. eacf34a85ab7ece6a76bd73b9443bc2fe62ac6f1](https://github.com/kaldi-asr/kaldi/blob/master/egs/wsj/s5/steps/libs/nnet3/train/frame_level_objf/common.py)
 
 method **``train_new_models()``**, line ~122
 ```
@@ -92,7 +92,7 @@ ark,bg:nnet3-mixup-egs {frame_opts} {multitask_egs_opts}
 ```
 and here
 
-https://github.com/kaldi-asr/kaldi/blob/master/egs/wsj/s5/steps/libs/nnet3/train/chain_objf/acoustic_model.py
+[acoustic_model.py, rev. bba22b58407a3243e3fa847986753266e122d015](https://github.com/kaldi-asr/kaldi/blob/master/egs/wsj/s5/steps/libs/nnet3/train/chain_objf/acoustic_model.py)
 
 method **``train_new_models()``**, line ~199
 ```
