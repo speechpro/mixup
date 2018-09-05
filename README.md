@@ -73,7 +73,7 @@ You may need to add line
 ```
 export LD_LIBRARY_PATH=$KALDI_ROOT/src/lib:$KALDI_ROOT/tools/openfst/lib:$LD_LIBRARY_PATH
 ```
-in your ``path.sh``.
+to your ``path.sh``.
 
 How to use
 ==========
