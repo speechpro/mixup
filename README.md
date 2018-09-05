@@ -104,8 +104,8 @@ ark,bg:nnet3-chain-mixup-egs {multitask_egs_opts}
 ```
 respectively.
 
-Supported parameters
-====================
+Program options
+===============
 Mixup utilities have a number of parameters and modes of operation. In order to simplify their embedding all parameters can be passed in two ways: in command line and as environment variables.
 
 You can find detailed explanation of parameters and investigation of mixup effectiveness in various operation modes in [[1]](https://docs.google.com/viewerng/viewer?url=https://www.isca-speech.org/archive/Interspeech_2018/pdfs/2191.pdf).
