@@ -108,7 +108,7 @@ Program options
 ===============
 Mixup utilities have a number of parameters and modes of operation. In order to simplify their embedding all parameters can be passed in two equivalent ways: as command line program options and as environment variables.
 
-You can find detailed explanation of parameters and investigation of the mixup effectiveness in various operation modes in [[1]](https://docs.google.com/viewerng/viewer?url=https://www.isca-speech.org/archive/Interspeech_2018/pdfs/2191.pdf).
+You can find detailed explanation of the parameters and investigation of the mixup effectiveness in various operation modes in [[1]](https://docs.google.com/viewerng/viewer?url=https://www.isca-speech.org/archive/Interspeech_2018/pdfs/2191.pdf).
 
 ### nnet3-mixup-egs
 |Command line|Environment variable|Allowable values|Meaning|
