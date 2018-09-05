@@ -127,6 +127,21 @@ You can find detailed explanation of parameters and investigation of mixup effec
 |--buff-size|MIXUP_BUFF_SIZE|integer > 0|Buffer size for data shuffling (global mode)|
 |--compress|MIXUP_COMPRESS|0, 1|Compress features and i-vectors|
 
+### nnet3-chain-mixup-egs
+|Command line|Environment variable|Allowable values|Meaning|
+|---|---|---|---|
+|--mix-mode|MIXUP_MIX_MODE|local, shift|Mixup mode|
+|--distrib|MIXUP_DISTRIB|uniform:min,max, beta:alpha, beta2:alpha|Mixup scaling factors distribution|
+|--scale-fst-algo|MIXUP_SCALE_FST_ALGO|default[:scale[,eps]], balanced[:scale[,eps]]|Scale supervision FSTs algorithm|
+|--swap-scales|MIXUP_SWAP_SCALES|true, false|Swap supervision FST scales|
+|--max-super|MIXUP_MAX_SUPER|true, false|Get supervision from example with maximum scale|
+|--min-shift|MIXUP_MIN_SHIFT|integer > 0|Minimum sequence shift size (shift mode)|
+|--max-shift|MIXUP_MAX_SHIFT|integer > min-shift|Maximum sequence shift size (shift mode)|
+|--fixed|MIXUP_FIXED|float in the range (0, 1)|The portion of the data to leave untouched|
+|--buff-size|MIXUP_BUFF_SIZE|integer > 0|Buffer size for data shuffling (global mode)|
+|--frame-shift|MIXUP_FRAME_SHIFT|integer >= 0|Allows you to shift time values in the supervision data (excluding iVector data) - useful in augmenting data. Note, the outputs will remain at the closest exact multiples of the frame subsampling|
+|--compress|MIXUP_COMPRESS|0, 1|Compress features and i-vectors|
+
 References
 ==========
 [1] https://docs.google.com/viewerng/viewer?url=https://www.isca-speech.org/archive/Interspeech_2018/pdfs/2191.pdf
