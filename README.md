@@ -120,8 +120,8 @@ You can find detailed explanation of the parameters and investigation of the mix
 |--max-num|MIXUP_MAX_NUM|integer >= min-num|1|Maximum number of admixtures|
 |--min-shift|MIXUP_MIN_SHIFT|integer > 0|1|Minimum sequence shift size (shift mode)|
 |--max-shift|MIXUP_MAX_SHIFT|integer >= min-shift|3|Maximum sequence shift size (shift mode)|
-|--fixed-egs|MIXUP_FIXED_EGS|float in the range [0, 1]|0.10|Portion of examples to leave untouched|
-|--fixed-frames|MIXUP_FIXED_FRAMES|float in the range [0, 1]|0.10|Portion of frames to leave untouched|
+|--fixed-egs|MIXUP_FIXED_EGS|float in the range [0, 1]|0.1|Portion of examples to leave untouched|
+|--fixed-frames|MIXUP_FIXED_FRAMES|float in the range [0, 1]|0.1|Portion of frames to leave untouched|
 |--left-range|MIXUP_LEFT_RANGE|integer > 0|3|Left range to pick an admixture frame (local mode)|
 |--right-range|MIXUP_RIGHT_RANGE|integer > 0|3|Right range to pick an admixture frame (local mode)|
 |--buff-size|MIXUP_BUFF_SIZE|integer > 0|500|Buffer size for data shuffling (global mode)|
@@ -137,7 +137,7 @@ You can find detailed explanation of the parameters and investigation of the mix
 |--max-super|MIXUP_MAX_SUPER|true, false|false|Get supervision from example with maximum scale|
 |--min-shift|MIXUP_MIN_SHIFT|integer > 0|1|Minimum sequence shift size (shift mode)|
 |--max-shift|MIXUP_MAX_SHIFT|integer >= min-shift|3|Maximum sequence shift size (shift mode)|
-|--fixed|MIXUP_FIXED|float in the range [0, 1]|0.10|The portion of the data to leave untouched|
+|--fixed|MIXUP_FIXED|float in the range [0, 1]|0.1|The portion of the data to leave untouched|
 |--buff-size|MIXUP_BUFF_SIZE|integer > 0|500|Buffer size for data shuffling (global mode)|
 |--frame-shift|MIXUP_FRAME_SHIFT|integer >= 0|0|Allows you to shift time values in the supervision data (excluding iVector data) - useful in augmenting data. Note, the outputs will remain at the closest exact multiples of the frame subsampling|
 |--compress|MIXUP_COMPRESS|0, 1|0|Compress features and i-vectors|
