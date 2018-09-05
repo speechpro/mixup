@@ -144,5 +144,5 @@ You can find detailed explanation of the parameters and investigation of the mix
 
 References
 ==========
-[1] [Ivan Medennikov, Yuri Khokhlov, Aleksei Romanenko, Dmitry Popov, Natalia Tomashenko, Ivan Sorokin, Alexander Zatvornitskiy, "An investigation of mixup training strategies for acoustic models in ASR", Proceedings of the Annual Conference of International
+**``[1]``** [Ivan Medennikov, Yuri Khokhlov, Aleksei Romanenko, Dmitry Popov, Natalia Tomashenko, Ivan Sorokin, Alexander Zatvornitskiy, "An investigation of mixup training strategies for acoustic models in ASR", Proceedings of the Annual Conference of International
 Speech Communication Association (INTERSPEECH), 2018](https://docs.google.com/viewerng/viewer?url=https://www.isca-speech.org/archive/Interspeech_2018/pdfs/2191.pdf)
