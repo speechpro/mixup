@@ -157,6 +157,19 @@ float RandomScaleBeta2::Value() {
 
 ** **``Scale supervision FSTs algorithm.``** When merging supervision FSTs we apply epsilon restriction as folows. If scaling factor less **``eps``** we leave example FST unchanged. If 1.0 minus scaling factor less **``eps``** we use admixture FST instead of fusion. Default value of **``eps``** is 0.001.
 
+```C++
+void ExampleMixer::FuseGraphs(const fst_t& _admixture, float _admx_scale, fst_t& _example) const {
+    if (_admx_scale < scale_eps) {
+        return;
+    } else if ((1.0f - _admx_scale) < scale_eps) {
+        _example = _admixture;
+        return;
+    }
+    ...
+    ...
+}
+```
+
 References
 ==========
 **``[1]``** [Ivan Medennikov, Yuri Khokhlov, Aleksei Romanenko, Dmitry Popov, Natalia Tomashenko, Ivan Sorokin, Alexander Zatvornitskiy, "An investigation of mixup training strategies for acoustic models in ASR", Proceedings of the Annual Conference of International
