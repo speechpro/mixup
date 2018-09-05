@@ -144,4 +144,4 @@ You can find detailed explanation of parameters and investigation of mixup effec
 
 References
 ==========
-[1] [An investigation of mixup training strategies for acoustic models in ASR](https://docs.google.com/viewerng/viewer?url=https://www.isca-speech.org/archive/Interspeech_2018/pdfs/2191.pdf)
+[1] [Ivan Medennikov, Yuri Khokhlov, Aleksei Romanenko, Dmitry Popov, Natalia Tomashenko, Ivan Sorokin, Alexander Zatvornitskiy, "An investigation of mixup training strategies for acoustic models in ASR", INTERSPEECH, 2018](https://docs.google.com/viewerng/viewer?url=https://www.isca-speech.org/archive/Interspeech_2018/pdfs/2191.pdf)
