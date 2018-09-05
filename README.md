@@ -142,7 +142,7 @@ You can find detailed explanation of the parameters and investigation of the mix
 |--frame-shift|MIXUP_FRAME_SHIFT|integer >= 0|0|Allows you to shift time values in the supervision data (excluding iVector data) - useful in augmenting data. Note, the outputs will remain at the closest exact multiples of the frame subsampling|
 |--compress|MIXUP_COMPRESS|0, 1|0|Compress features and i-vectors|
 
-* **``Mixup scaling factors distribution.``** In case of --distrib=beta:alpha we use the standard beta probability distribution with symmetric shape (β=α). But when --distrib=beta2:alpha we use modified beta distribution: if sampled value ρ greater 0.5 we use (1-ρ).
+\* **``Mixup scaling factors distribution.``** In case of --distrib=beta:alpha we use the standard beta probability distribution with symmetric shape (β=α). But when --distrib=beta2:alpha we use modified beta distribution: if sampled value ρ greater 0.5 we use (1-ρ).
 
 ```C++
 float RandomScaleBeta2::Value() {
