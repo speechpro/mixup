@@ -161,7 +161,7 @@ float RandomScaleBeta2::Value() {
 void ExampleMixer::FuseGraphs(const fst_t& _admixture, float _admx_scale, fst_t& _example) const {
     if (_admx_scale < scale_eps) {
         return;
-    } else if ((1.0f - _admx_scale) < scale_eps) {
+    } else if ((1.0 - _admx_scale) < scale_eps) {
         _example = _admixture;
         return;
     }
