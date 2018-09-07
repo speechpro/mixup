@@ -4,6 +4,7 @@ This repository contains Kaldi-compatible implementation of the mixup technique 
 
 If you use this code for your research, please cite our paper:
 
+```
 @inproceedings{Medennikov_mixup2018,
   author={Ivan Medennikov and Yuri Khokhlov and Aleksei Romanenko and Dmitry Popov and Natalia Tomashenko and Ivan Sorokin and Alexander Zatvornitskiy},
   title={An Investigation of Mixup Training Strategies for Acoustic Models in ASR},
@@ -13,6 +14,7 @@ If you use this code for your research, please cite our paper:
   doi={10.21437/Interspeech.2018-2191},
   url={http://dx.doi.org/10.21437/Interspeech.2018-2191}
 }
+```
 
 If you have any questions on the paper or this implementation, please ask Ivan Medennikov (medennikov@speechpro.com).
 
