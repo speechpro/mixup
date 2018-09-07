@@ -1,6 +1,5 @@
 Introduction
 ============
-
 This repository contains Kaldi-compatible implementation of the mixup technique presented in the Interspeech 2018 paper "An Investigation of Mixup Training Strategies for Acoustic Models in ASR".
 
 If you use this code for your research, please cite our paper:
@@ -18,7 +17,7 @@ If you use this code for your research, please cite our paper:
 If you have any questions on the paper or this implementation, please ask Ivan Medennikov (medennikov@speechpro.com).
 
 Licence
--------
+=======
 [Apache 2.0](https://github.com/speechpro/mixup/blob/master/LICENSE)
 
 Installation guide
