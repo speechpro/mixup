@@ -194,4 +194,5 @@ References
 ==========
 **``[1]``** [Ivan Medennikov, Yuri Khokhlov, Aleksei Romanenko, Dmitry Popov, Natalia Tomashenko, Ivan Sorokin, Alexander Zatvornitskiy, "An investigation of mixup training strategies for acoustic models in ASR", Proceedings of the Annual Conference of International
 Speech Communication Association (INTERSPEECH), 2018](https://docs.google.com/viewerng/viewer?url=https://www.isca-speech.org/archive/Interspeech_2018/pdfs/2191.pdf)
+
 **``[2]``** [Tomashenko, N., Khokhlov, Y., Estève, Y. (2018) Speaker Adaptive Training and Mixup Regularization for Neural Network Acoustic Models in Automatic Speech Recognition. Proc. Interspeech 2018, ‎2414-2418, DOI: 10.21437/Interspeech.‎2018-2209](https://www.isca-speech.org/archive/Interspeech_2018/abstracts/2209.html)
