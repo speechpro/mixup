@@ -22,6 +22,35 @@ Licence
 =======
 [Apache 2.0](https://github.com/speechpro/mixup/blob/master/LICENSE)
 
+How to use
+==========
+
+Utilities nnet3-mixup-egs and nnet3-chain-mixup-egs are intended to be used instead of nnet3-copy-egs and nnet3-chain-copy-egs in Kaldi training scripts. In order to use mixup utilities you should replace nnet3-copy-egs and/or nnet3-chain-copy-egs here
+
+[``common.py, rev. eacf34a85ab7ece6a76bd73b9443bc2fe62ac6f1``](https://github.com/kaldi-asr/kaldi/blob/master/egs/wsj/s5/steps/libs/nnet3/train/frame_level_objf/common.py)
+
+method **``train_new_models()``**, line ~122
+```
+ark,bg:nnet3-copy-egs {frame_opts} {multitask_egs_opts}
+```
+with
+```
+ark,bg:nnet3-mixup-egs {frame_opts} {multitask_egs_opts}
+```
+and here
+
+[``acoustic_model.py, rev. bba22b58407a3243e3fa847986753266e122d015``](https://github.com/kaldi-asr/kaldi/blob/master/egs/wsj/s5/steps/libs/nnet3/train/chain_objf/acoustic_model.py)
+
+method **``train_new_models()``**, line ~199
+```
+ark,bg:nnet3-chain-copy-egs {multitask_egs_opts}
+```
+with 
+```
+ark,bg:nnet3-chain-mixup-egs {multitask_egs_opts}
+```
+respectively.
+
 Installation guide
 ==================
 
@@ -94,35 +123,6 @@ You may need to add line
 export LD_LIBRARY_PATH=$KALDI_ROOT/src/lib:$KALDI_ROOT/tools/openfst/lib:$LD_LIBRARY_PATH
 ```
 to your ``path.sh``.
-
-How to use
-==========
-
-Utilities nnet3-mixup-egs and nnet3-chain-mixup-egs are intended to be used instead of nnet3-copy-egs and nnet3-chain-copy-egs in Kaldi training scripts. In order to use mixup utilities you should replace nnet3-copy-egs and/or nnet3-chain-copy-egs here
-
-[``common.py, rev. eacf34a85ab7ece6a76bd73b9443bc2fe62ac6f1``](https://github.com/kaldi-asr/kaldi/blob/master/egs/wsj/s5/steps/libs/nnet3/train/frame_level_objf/common.py)
-
-method **``train_new_models()``**, line ~122
-```
-ark,bg:nnet3-copy-egs {frame_opts} {multitask_egs_opts}
-```
-with
-```
-ark,bg:nnet3-mixup-egs {frame_opts} {multitask_egs_opts}
-```
-and here
-
-[``acoustic_model.py, rev. bba22b58407a3243e3fa847986753266e122d015``](https://github.com/kaldi-asr/kaldi/blob/master/egs/wsj/s5/steps/libs/nnet3/train/chain_objf/acoustic_model.py)
-
-method **``train_new_models()``**, line ~199
-```
-ark,bg:nnet3-chain-copy-egs {multitask_egs_opts}
-```
-with 
-```
-ark,bg:nnet3-chain-mixup-egs {multitask_egs_opts}
-```
-respectively.
 
 Program options
 ===============
