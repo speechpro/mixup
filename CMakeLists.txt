@@ -78,6 +78,8 @@ set(Kaldi_LIBRARIES "kaldi-nnet3;kaldi-chain;kaldi-cudamatrix;kaldi-decoder;kald
 set(Kaldi_LIBRARIES "${Kaldi_LIBRARIES};kaldi-fstext;kaldi-hmm;kaldi-transform;kaldi-gmm")
 set(Kaldi_LIBRARIES "${Kaldi_LIBRARIES};kaldi-tree;kaldi-util;kaldi-matrix;kaldi-base")
 
+set(CMAKE_INSTALL_RPATH "${CMAKE_SOURCE_DIR}/kaldi/tools/openfst/lib:${CMAKE_SOURCE_DIR}/kaldi/src/lib")
+
 ###################
 ### Compilation ###
 ###################

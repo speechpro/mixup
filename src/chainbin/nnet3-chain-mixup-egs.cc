@@ -282,7 +282,7 @@ protected:
     const GeneralMatrix& FindFeatures(const std::string& _name, const std::vector<NnetIo>& _nnet_io) const;
     GeneralMatrix* FindIVector(std::vector<NnetIo>& _nnet_io) const;
     const GeneralMatrix* FindIVector(const std::vector<NnetIo>& _nnet_io) const;
-    size_t SequenceLen(const fst_t& _targets) const;
+    //size_t SequenceLen(const fst_t& _targets) const;
     void CheckConsistence(const NnetChainExample& _example) const;
     void CheckConsistence(const NnetChainExample& _example1, const NnetChainExample& _example2) const;
     void ScaleGraph(fst_t& _target, float _scale) const;
@@ -423,19 +423,19 @@ const GeneralMatrix* ExampleMixer::FindIVector(const std::vector<NnetIo>& _nnet_
     return NULL;
 }
 
-size_t ExampleMixer::SequenceLen(const fst_t& _targets) const {
-    size_t num_frames = 0;
-    state_t state = _targets.Start();
-    while(true) {
-        iter_t iarc(_targets, state);
-        if (iarc.Done()) {
-            break;
-        }
-        ++num_frames;
-        state = iarc.Value().nextstate;
-    }
-    return num_frames;
-}
+//size_t ExampleMixer::SequenceLen(const fst_t& _targets) const {
+//    size_t num_frames = 0;
+//    state_t state = _targets.Start();
+//    while(true) {
+//        iter_t iarc(_targets, state);
+//        if (iarc.Done()) {
+//            break;
+//        }
+//        ++num_frames;
+//        state = iarc.Value().nextstate;
+//    }
+//    return num_frames;
+//}
 
 void ExampleMixer::CheckConsistence(const NnetChainExample& _example) const {
     if (_example.outputs.size() > 1) {
@@ -454,10 +454,19 @@ void ExampleMixer::CheckConsistence(const NnetChainExample& _example) const {
     if (_example.outputs.front().deriv_weights.Dim() != superv.frames_per_sequence) {
         KALDI_ERR << "Example output deriv_weights has unexpected dimension " << _example.outputs.front().deriv_weights.Dim() << " (must be " << superv.frames_per_sequence << ").";
     }
-    const size_t seq_len = SequenceLen(superv.fst);
-    if (seq_len != superv.frames_per_sequence) {
-        KALDI_ERR << "Sequence length derived from FST has wrong value " << seq_len << " (must be " << superv.frames_per_sequence << ").";
-    }
+    //const fst_t* fst = nullptr;
+    //if (superv.fst.NumStates() == 0) {
+    //    if (superv.e2e_fsts.size() != 1) {
+    //        KALDI_ERR << "Number of e2e_fsts is " << superv.e2e_fsts.size() << " (supported only 1)";
+    //    }
+    //    fst = &superv.e2e_fsts.front();
+    //} else {
+    //    fst = &superv.fst;
+    //}
+    //const size_t seq_len = SequenceLen(*fst);
+    //if (seq_len != superv.frames_per_sequence) {
+    //    KALDI_ERR << "Sequence length derived from FST has wrong value " << seq_len << " (must be " << superv.frames_per_sequence << ").";
+    //}
 }
 
 void ExampleMixer::CheckConsistence(const NnetChainExample& _example1, const NnetChainExample& _example2) const {
@@ -472,6 +481,9 @@ void ExampleMixer::CheckConsistence(const NnetChainExample& _example1, const Nne
     const int32_t fp_seq2 = exam_sup2.supervision.frames_per_sequence;
     if (fp_seq1 != fp_seq2) {
         KALDI_ERR << "Examples have different sequences lengths: " << fp_seq1 << " and " << fp_seq2 << ".";
+    }
+    if ((exam_sup1.supervision.fst.NumStates() == 0) && (exam_sup1.supervision.e2e_fsts.size() != exam_sup2.supervision.e2e_fsts.size())) {
+        KALDI_ERR << "Examples have different number of e2e_fsts: " << exam_sup1.supervision.e2e_fsts.size() << " and " << exam_sup2.supervision.e2e_fsts.size() << ".";
     }
 }
 
@@ -593,7 +605,13 @@ void ExampleMixer::AdmixGlobal(const NnetChainExample& _admixture, float _admx_s
         chain::Supervision &exam_sup = exam_nn_sup.supervision;
         const chain::Supervision &admx_sup = admx_nn_sup.supervision;
         exam_sup.weight = exam_sup.weight * exam_scale + admx_sup.weight * _admx_scale;
-        FuseGraphs(admx_sup.fst, _admx_scale, exam_sup.fst);
+        if (admx_sup.fst.NumStates() == 0) {
+            for (size_t i = 0; i < exam_sup.e2e_fsts.size(); ++i) {
+                FuseGraphs(admx_sup.e2e_fsts.at(i), _admx_scale, exam_sup.e2e_fsts.at(i));
+            }
+        } else {
+            FuseGraphs(admx_sup.fst, _admx_scale, exam_sup.fst);
+        }
     }
     scale_count += _admx_scale;
 }

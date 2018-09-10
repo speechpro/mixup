@@ -1,4 +1,8 @@
 build/
+cmake-build-*/
+.idea/
+temp/
+*.swp
 
 # Prerequisites
 *.d
@@ -33,4 +37,3 @@ build/
 *.out
 *.app
 
-*.swp
