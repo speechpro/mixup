@@ -194,15 +194,14 @@ public:
 typedef TCounter<int> IntCounter;
 typedef TCounter<float> FloatCounter;
 
-class ExampleMixer {
-protected:
-    typedef fst::StdVectorFst fst_t;
-    typedef fst_t::StateId state_t;
-    typedef fst_t::Arc arc_t;
-    typedef arc_t::Label label_t;
-    typedef arc_t::Weight wght_t;
-    typedef fst::ArcIterator<fst_t> iter_t;
+typedef fst::StdVectorFst fst_t;
+typedef fst_t::StateId state_t;
+typedef fst_t::Arc arc_t;
+typedef arc_t::Label label_t;
+typedef arc_t::Weight wght_t;
+typedef fst::ArcIterator<fst_t> iter_t;
 
+class ExampleMixer {
 protected:
     typedef boost::random::mt19937 rand_gen_t;
     typedef boost::random::uniform_int_distribution<int32_t> int_distrib_t;
@@ -286,6 +285,7 @@ protected:
     void CheckConsistence(const NnetChainExample& _example) const;
     void CheckConsistence(const NnetChainExample& _example1, const NnetChainExample& _example2) const;
     void ScaleGraph(fst_t& _target, float _scale) const;
+    void UnionGraphs(const fst_t& _admixture, fst_t& _example) const;
     void FuseGraphs(const fst_t& _admixture, float _admx_scale, fst_t& _example) const;
     void AdmixGlobal(const NnetChainExample& _admixture, float _admx_scale, ExamplePair& _example);
     void FlushGlobal(egs_buffer_t& _buffer);
@@ -500,6 +500,61 @@ void ExampleMixer::ScaleGraph(fst_t& _target, float _scale) const {
     }
 }
 
+void ExampleMixer::UnionGraphs(const fst_t& _admixture, fst_t& _example) const {
+    fst_t result;
+    result.ReserveStates(_example.NumStates() + _admixture.NumStates());
+    const state_t start = result.AddState();
+    result.SetStart(start);
+    std::vector<state_t> stmap(_example.NumStates(), -1);
+    for (state_t state = 0; state < _example.NumStates(); ++state) {
+        stmap[state] = (state == _example.Start())? start: result.AddState();
+        const wght_t& wght = _example.Final(state);
+        if (wght != wght_t::Zero()) {
+            if (state == _example.Start()) {
+                KALDI_WARN << "Final and start states are equal!";
+            }
+            result.SetFinal(stmap[state], wght);
+        }
+    }
+    for (state_t state = 0; state < _example.NumStates(); ++state) {
+        const state_t begin = (state == _example.Start())? start: stmap[state];
+        for (iter_t iarc(_example, state); !iarc.Done(); iarc.Next()) {
+            const arc_t& arc = iarc.Value();
+            const state_t end = (arc.nextstate == _example.Start())? start: stmap[arc.nextstate];
+            result.AddArc(begin, arc_t(arc.ilabel, arc.olabel, arc.weight, end));
+        }
+    }
+    stmap.assign(_admixture.NumStates(), -1);
+    for (state_t state = 0; state < _admixture.NumStates(); ++state) {
+        stmap[state] = (state == _admixture.Start())? start: result.AddState();
+        const wght_t& wght = _admixture.Final(state);
+        if (wght != wght_t::Zero()) {
+            if (state == _admixture.Start()) {
+                KALDI_WARN << "Final and start states are equal!";
+            }
+            result.SetFinal(stmap[state], wght);
+        }
+    }
+    for (state_t state = 0; state < _admixture.NumStates(); ++state) {
+        const state_t begin = (state == _admixture.Start())? start: stmap[state];
+        for (iter_t iarc(_admixture, state); !iarc.Done(); iarc.Next()) {
+            const arc_t& arc = iarc.Value();
+            const state_t end = (arc.nextstate == _admixture.Start())? start: stmap[arc.nextstate];
+            result.AddArc(begin, arc_t(arc.ilabel, arc.olabel, arc.weight, end));
+        }
+    }
+    //====================== DEBUG ========================
+    //{
+    //    if ((_example.NumStates() < 20) && (_admixture.NumStates() < 20)) {
+    //        _example.Write("/mnt/TOSHIBA/khokhlov/coding/mixup_github/temp/example.fst");
+    //        _admixture.Write("/mnt/TOSHIBA/khokhlov/coding/mixup_github/temp/admixture.fst");
+    //        result.Write("/mnt/TOSHIBA/khokhlov/coding/mixup_github/temp/result.fst");
+    //    }
+    //}
+    //=====================================================
+    _example = result;
+}
+
 void ExampleMixer::FuseGraphs(const fst_t& _admixture, float _admx_scale, fst_t& _example) const {
     //_admixture.Write("/mnt/TOSHIBA/khokhlov/coding/temp/i-vect/temp/mixup/admx.fst");
     //_example.Write("/mnt/TOSHIBA/khokhlov/coding/temp/i-vect/temp/mixup/exam.fst");
@@ -510,7 +565,8 @@ void ExampleMixer::FuseGraphs(const fst_t& _admixture, float _admx_scale, fst_t&
         return;
     }
     if (scale_fst_algo.empty() || (scale_fst_algo == "noscale")) {
-        fst::Union(&_example, _admixture);
+        //fst::Union(&_example, _admixture);
+        UnionGraphs(_admixture, _example);
     } else if (scale_fst_algo == "default") {
         fst_t admixture(_admixture);
         if (swap_scales) {
@@ -520,7 +576,8 @@ void ExampleMixer::FuseGraphs(const fst_t& _admixture, float _admx_scale, fst_t&
             ScaleGraph(admixture, _admx_scale);
             ScaleGraph(_example, 1.0f - _admx_scale);
         }
-        fst::Union(&_example, admixture);
+        //fst::Union(&_example, admixture);
+        UnionGraphs(admixture, _example);
     } else if (scale_fst_algo == "balanced") {
         const double scale_norm = std::sqrt(_admx_scale * (1.0 - _admx_scale));
         const auto main_scale = (float)((1.0 - _admx_scale) / scale_norm);
@@ -533,37 +590,38 @@ void ExampleMixer::FuseGraphs(const fst_t& _admixture, float _admx_scale, fst_t&
             ScaleGraph(admixture, admx_scale);
             ScaleGraph(_example, main_scale);
         }
-        fst::Union(&_example, admixture);
+        //fst::Union(&_example, admixture);
+        UnionGraphs(admixture, _example);
     } else {
         KALDI_ERR << "Unknown FST scaling algorithm ID: \"" << scale_fst_algo << "\".";
     }
-    fst::RmEpsilon(&_example);
-    fst_t result;
-    fst::Determinize(_example, &result);
-    fst::Minimize(&result);
-    fst::TopSort(&result);
-    _example = result;
-    //_example.Write("/mnt/TOSHIBA/khokhlov/coding/temp/i-vect/temp/mixup/mixt.fst");
-    if (test_mode) {
-        size_t num_finals = 0;
-        for (state_t state = 0; state < _example.NumStates(); ++state) {
-            iter_t iarc(_example, state);
-            if (_example.Final(state) != wght_t::Zero()) {
-                if (!iarc.Done()) {
-                    KALDI_ERR << "Combined supervision graph has wrong structure: final state has outcoming arcs.";
-                }
-                ++num_finals;
-            } else {
-                const arc_t &arc = iarc.Value();
-                if (arc.ilabel == 0) {
-                    KALDI_ERR << "Combined supervision graph has epsilon arcs.";
-                }
-            }
-        }
-        if (num_finals != 1) {
-            KALDI_ERR << "Combined supervision graph has " << num_finals << " final states (only 1 expected).";
-        }
-    }
+    //fst::RmEpsilon(&_example);
+    //fst_t result;
+    //fst::Determinize(_example, &result);
+    //fst::Minimize(&result);
+    //fst::TopSort(&result);
+    //_example = result;
+    ////_example.Write("/mnt/TOSHIBA/khokhlov/coding/temp/i-vect/temp/mixup/mixt.fst");
+    //if (test_mode) {
+    //    size_t num_finals = 0;
+    //    for (state_t state = 0; state < _example.NumStates(); ++state) {
+    //        iter_t iarc(_example, state);
+    //        if (_example.Final(state) != wght_t::Zero()) {
+    //            if (!iarc.Done()) {
+    //                KALDI_ERR << "Combined supervision graph has wrong structure: final state has outcoming arcs.";
+    //            }
+    //            ++num_finals;
+    //        } else {
+    //            const arc_t &arc = iarc.Value();
+    //            if (arc.ilabel == 0) {
+    //                KALDI_ERR << "Combined supervision graph has epsilon arcs.";
+    //            }
+    //        }
+    //    }
+    //    if (num_finals != 1) {
+    //        KALDI_ERR << "Combined supervision graph has " << num_finals << " final states (only 1 expected).";
+    //    }
+    //}
 }
 
 void ExampleMixer::AdmixGlobal(const NnetChainExample& _admixture, float _admx_scale, ExamplePair& _example) {
@@ -712,6 +770,39 @@ void ExampleMixer::Finish() {
     }
 }
 
+void InspectFST(const fst_t& _fst) {
+    if (_fst.NumStates() == 0) {
+        std::cerr << "Zero num states\n";
+        return;
+    }
+    size_t num_fin = 0;
+    bool not_auto = false;
+    bool has_eps = false;
+    for (state_t state = 0; state < _fst.NumStates(); ++state) {
+        if (_fst.Final(state) != wght_t::Zero()) {
+            ++num_fin;
+        }
+        for (iter_t iarc(_fst, state); !iarc.Done(); iarc.Next()) {
+            const arc_t& arc = iarc.Value();
+            if (arc.ilabel != arc.olabel) {
+                not_auto = true;
+            }
+            if (arc.ilabel == 0) {
+                has_eps = true;
+            }
+        }
+    }
+    if (num_fin == 0) {
+        std::cerr << "No final state\n";
+    }
+    if (not_auto) {
+        std::cerr << "Not automate\n";
+    }
+    if (has_eps) {
+        std::cerr << "Has <eps>\n";
+    }
+}
+
 } }
 
 bool AsBool(const char* _value) {
@@ -743,6 +834,8 @@ bool AsBool(const char* _value) {
 // --mix-mode=global --test-mode=true --distrib=beta:0.01 --frame-shift=1 ark:/media/work/coding/data/mgb3/train_data/cegs.10.ark ark:/media/work/coding/data/mgb3/train_data/cegs.10.mix.ark
 // --mix-mode=global --distrib=beta2:0.5 --buff_size=8000 ark:/media/work/coding/data/mgb3/train_data/cegs.1.ark ark:/dev/null
 // --mix-mode=global --distrib=beta2:0.5 --buff_size=8000 ark:/media/work/coding/data/mgb3/train_data/cegs.1.ark ark,t:/media/work/coding/data/mgb3/train_data/cegs.1.mix.ark
+
+// --frame-shift=1 ark:/mnt/TOSHIBA/khokhlov/coding/mixup_github/temp/cegs.1.ark ark:/dev/null
 
 int main(int argc, char *argv[]) {
     try {
@@ -859,6 +952,11 @@ int main(int argc, char *argv[]) {
         size_t num_read = 0;
         for (; !example_reader.Done(); example_reader.Next(), num_read++) {
             const NnetChainExample& example = example_reader.Value();
+            //for (size_t i = 0; i < example.outputs.size(); ++i) {
+            //    for (size_t j = 0; j < example.outputs[i].supervision.e2e_fsts.size(); ++j) {
+            //        InspectFST(example.outputs[i].supervision.e2e_fsts[j]);
+            //    }
+            //}
             ExamplePair ex_pair(example_reader.Key(), ExamplePtr(new NnetChainExample(example)));
             mixer.AcceptExample(ex_pair);
         }
