@@ -1,3 +1,25 @@
+// Copyright 2018 Speech Technology Center www.speechpro.com
+//
+// Licensed under the Apache License, Version 2.0 http://www.apache.org/licenses/LICENSE-2.0
+//
+// This code is provided *as is* basis, without warranties or conditions of any kind.
+////////////////////////////////////////////////////////////////////////////////////////////
+// If you find this code useful for your research or production, please cite our paper:
+//
+// @inproceedings{Medennikov_mixup2018,
+//   author={Ivan Medennikov and Yuri Khokhlov and Aleksei Romanenko and Dmitry Popov and Natalia Tomashenko and Ivan Sorokin and Alexander Zatvornitskiy},
+//   title={An Investigation of Mixup Training Strategies for Acoustic Models in ASR},
+//   year=2018,
+//   booktitle={Proc. Interspeech 2018},
+//   pages={2903--2907},
+//   doi={10.21437/Interspeech.2018-2191},
+//   url={http://dx.doi.org/10.21437/Interspeech.2018-2191}
+// }
+//
+// (corresponding author: medennikov@speechpro.com)
+////////////////////////////////////////////////////////////////////////////////////////////
+
+
 #include <limits>
 #include <algorithm>
 #include <boost/shared_ptr.hpp>
