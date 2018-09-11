@@ -281,7 +281,6 @@ protected:
     const GeneralMatrix& FindFeatures(const std::string& _name, const std::vector<NnetIo>& _nnet_io) const;
     GeneralMatrix* FindIVector(std::vector<NnetIo>& _nnet_io) const;
     const GeneralMatrix* FindIVector(const std::vector<NnetIo>& _nnet_io) const;
-    //size_t SequenceLen(const fst_t& _targets) const;
     void CheckConsistence(const NnetChainExample& _example) const;
     void CheckConsistence(const NnetChainExample& _example1, const NnetChainExample& _example2) const;
     void ScaleGraph(fst_t& _target, float _scale) const;
@@ -423,20 +422,6 @@ const GeneralMatrix* ExampleMixer::FindIVector(const std::vector<NnetIo>& _nnet_
     return NULL;
 }
 
-//size_t ExampleMixer::SequenceLen(const fst_t& _targets) const {
-//    size_t num_frames = 0;
-//    state_t state = _targets.Start();
-//    while(true) {
-//        iter_t iarc(_targets, state);
-//        if (iarc.Done()) {
-//            break;
-//        }
-//        ++num_frames;
-//        state = iarc.Value().nextstate;
-//    }
-//    return num_frames;
-//}
-
 void ExampleMixer::CheckConsistence(const NnetChainExample& _example) const {
     if (_example.outputs.size() > 1) {
         KALDI_ERR << "Examples with multiple outputs are not supported.";
@@ -454,19 +439,6 @@ void ExampleMixer::CheckConsistence(const NnetChainExample& _example) const {
     if (_example.outputs.front().deriv_weights.Dim() != superv.frames_per_sequence) {
         KALDI_ERR << "Example output deriv_weights has unexpected dimension " << _example.outputs.front().deriv_weights.Dim() << " (must be " << superv.frames_per_sequence << ").";
     }
-    //const fst_t* fst = nullptr;
-    //if (superv.fst.NumStates() == 0) {
-    //    if (superv.e2e_fsts.size() != 1) {
-    //        KALDI_ERR << "Number of e2e_fsts is " << superv.e2e_fsts.size() << " (supported only 1)";
-    //    }
-    //    fst = &superv.e2e_fsts.front();
-    //} else {
-    //    fst = &superv.fst;
-    //}
-    //const size_t seq_len = SequenceLen(*fst);
-    //if (seq_len != superv.frames_per_sequence) {
-    //    KALDI_ERR << "Sequence length derived from FST has wrong value " << seq_len << " (must be " << superv.frames_per_sequence << ").";
-    //}
 }
 
 void ExampleMixer::CheckConsistence(const NnetChainExample& _example1, const NnetChainExample& _example2) const {
@@ -543,21 +515,10 @@ void ExampleMixer::UnionGraphs(const fst_t& _admixture, fst_t& _example) const {
             result.AddArc(begin, arc_t(arc.ilabel, arc.olabel, arc.weight, end));
         }
     }
-    //====================== DEBUG ========================
-    //{
-    //    if ((_example.NumStates() < 20) && (_admixture.NumStates() < 20)) {
-    //        _example.Write("/mnt/TOSHIBA/khokhlov/coding/mixup_github/temp/example.fst");
-    //        _admixture.Write("/mnt/TOSHIBA/khokhlov/coding/mixup_github/temp/admixture.fst");
-    //        result.Write("/mnt/TOSHIBA/khokhlov/coding/mixup_github/temp/result.fst");
-    //    }
-    //}
-    //=====================================================
     _example = result;
 }
 
 void ExampleMixer::FuseGraphs(const fst_t& _admixture, float _admx_scale, fst_t& _example) const {
-    //_admixture.Write("/mnt/TOSHIBA/khokhlov/coding/temp/i-vect/temp/mixup/admx.fst");
-    //_example.Write("/mnt/TOSHIBA/khokhlov/coding/temp/i-vect/temp/mixup/exam.fst");
     if (_admx_scale < scale_eps) {
         return;
     } else if ((1.0f - _admx_scale) < scale_eps) {
@@ -565,7 +526,6 @@ void ExampleMixer::FuseGraphs(const fst_t& _admixture, float _admx_scale, fst_t&
         return;
     }
     if (scale_fst_algo.empty() || (scale_fst_algo == "noscale")) {
-        //fst::Union(&_example, _admixture);
         UnionGraphs(_admixture, _example);
     } else if (scale_fst_algo == "default") {
         fst_t admixture(_admixture);
@@ -576,7 +536,6 @@ void ExampleMixer::FuseGraphs(const fst_t& _admixture, float _admx_scale, fst_t&
             ScaleGraph(admixture, _admx_scale);
             ScaleGraph(_example, 1.0f - _admx_scale);
         }
-        //fst::Union(&_example, admixture);
         UnionGraphs(admixture, _example);
     } else if (scale_fst_algo == "balanced") {
         const double scale_norm = std::sqrt(_admx_scale * (1.0 - _admx_scale));
@@ -590,38 +549,10 @@ void ExampleMixer::FuseGraphs(const fst_t& _admixture, float _admx_scale, fst_t&
             ScaleGraph(admixture, admx_scale);
             ScaleGraph(_example, main_scale);
         }
-        //fst::Union(&_example, admixture);
         UnionGraphs(admixture, _example);
     } else {
         KALDI_ERR << "Unknown FST scaling algorithm ID: \"" << scale_fst_algo << "\".";
     }
-    //fst::RmEpsilon(&_example);
-    //fst_t result;
-    //fst::Determinize(_example, &result);
-    //fst::Minimize(&result);
-    //fst::TopSort(&result);
-    //_example = result;
-    ////_example.Write("/mnt/TOSHIBA/khokhlov/coding/temp/i-vect/temp/mixup/mixt.fst");
-    //if (test_mode) {
-    //    size_t num_finals = 0;
-    //    for (state_t state = 0; state < _example.NumStates(); ++state) {
-    //        iter_t iarc(_example, state);
-    //        if (_example.Final(state) != wght_t::Zero()) {
-    //            if (!iarc.Done()) {
-    //                KALDI_ERR << "Combined supervision graph has wrong structure: final state has outcoming arcs.";
-    //            }
-    //            ++num_finals;
-    //        } else {
-    //            const arc_t &arc = iarc.Value();
-    //            if (arc.ilabel == 0) {
-    //                KALDI_ERR << "Combined supervision graph has epsilon arcs.";
-    //            }
-    //        }
-    //    }
-    //    if (num_finals != 1) {
-    //        KALDI_ERR << "Combined supervision graph has " << num_finals << " final states (only 1 expected).";
-    //    }
-    //}
 }
 
 void ExampleMixer::AdmixGlobal(const NnetChainExample& _admixture, float _admx_scale, ExamplePair& _example) {
@@ -767,39 +698,6 @@ void ExampleMixer::Finish() {
                 FlushGlobal(buffer);
             }
         }
-    }
-}
-
-void InspectFST(const fst_t& _fst) {
-    if (_fst.NumStates() == 0) {
-        std::cerr << "Zero num states\n";
-        return;
-    }
-    size_t num_fin = 0;
-    bool not_auto = false;
-    bool has_eps = false;
-    for (state_t state = 0; state < _fst.NumStates(); ++state) {
-        if (_fst.Final(state) != wght_t::Zero()) {
-            ++num_fin;
-        }
-        for (iter_t iarc(_fst, state); !iarc.Done(); iarc.Next()) {
-            const arc_t& arc = iarc.Value();
-            if (arc.ilabel != arc.olabel) {
-                not_auto = true;
-            }
-            if (arc.ilabel == 0) {
-                has_eps = true;
-            }
-        }
-    }
-    if (num_fin == 0) {
-        std::cerr << "No final state\n";
-    }
-    if (not_auto) {
-        std::cerr << "Not automate\n";
-    }
-    if (has_eps) {
-        std::cerr << "Has <eps>\n";
     }
 }
 
@@ -952,11 +850,6 @@ int main(int argc, char *argv[]) {
         size_t num_read = 0;
         for (; !example_reader.Done(); example_reader.Next(), num_read++) {
             const NnetChainExample& example = example_reader.Value();
-            //for (size_t i = 0; i < example.outputs.size(); ++i) {
-            //    for (size_t j = 0; j < example.outputs[i].supervision.e2e_fsts.size(); ++j) {
-            //        InspectFST(example.outputs[i].supervision.e2e_fsts[j]);
-            //    }
-            //}
             ExamplePair ex_pair(example_reader.Key(), ExamplePtr(new NnetChainExample(example)));
             mixer.AcceptExample(ex_pair);
         }

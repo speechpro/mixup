@@ -92,6 +92,7 @@ add_executable(nnet3-mixup-egs src/nnet3bin/nnet3-mixup-egs.cc)
 target_link_libraries(nnet3-mixup-egs ${Kaldi_LIBRARIES})
 target_link_libraries(nnet3-mixup-egs rt dl)
 target_link_libraries(nnet3-mixup-egs ${Boost_LIBRARIES} ${CUDA_LIBRARIES} ${FST_LIBRARIES} ${ATLAS_LIBRARIES})
+set_property(TARGET nnet3-mixup-egs PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 #
 # Project nnet3-chain-mixup-egs
@@ -101,6 +102,7 @@ add_executable(nnet3-chain-mixup-egs src/chainbin/nnet3-chain-mixup-egs.cc)
 target_link_libraries(nnet3-chain-mixup-egs ${Kaldi_LIBRARIES})
 target_link_libraries(nnet3-chain-mixup-egs rt dl)
 target_link_libraries(nnet3-chain-mixup-egs ${Boost_LIBRARIES} ${CUDA_LIBRARIES} ${FST_LIBRARIES} ${ATLAS_LIBRARIES})
+set_property(TARGET nnet3-chain-mixup-egs PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 ####################
 ### Installation ###

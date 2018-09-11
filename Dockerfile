@@ -2,7 +2,7 @@ FROM nvidia/cuda:9.1-cudnn7-devel-ubuntu16.04
 
 MAINTAINER Khokhlov Yuri <khokhlov@speechpro.com>
 
-WORKDIR /speechpro
+WORKDIR /stc
 
 RUN apt-get -qq -y update \
   && apt-get -qq -y --no-install-recommends install \
@@ -33,7 +33,7 @@ RUN git clone --recursive https://github.com/speechpro/mixup.git \
   && make -j $(nproc) && make install \
   && cd .. && rm -r build
 
-ENV KALDI_ROOT /speechpro/mixup/kaldi
+ENV KALDI_ROOT /stc/mixup/kaldi
 ENV PATH $KALDI_ROOT/tools/openfst/bin:$KALDI_ROOT/tools/sph2pipe_v2.5:\
 ${KALDI_ROOT}/src/bin:${KALDI_ROOT}/src/chainbin:${KALDI_ROOT}/src/featbin:\
 ${KALDI_ROOT}/src/fgmmbin:${KALDI_ROOT}/src/fstbin:${KALDI_ROOT}/src/gmmbin:\
@@ -42,8 +42,6 @@ ${KALDI_ROOT}/src/lmbin:${KALDI_ROOT}/src/nnet2bin:${KALDI_ROOT}/src/nnet3bin:\
 ${KALDI_ROOT}/src/nnetbin:${KALDI_ROOT}/src/online2bin:${KALDI_ROOT}/src/onlinebin:\
 ${KALDI_ROOT}/src/rnnlmbin:${KALDI_ROOT}/src/sgmm2bin:${KALDI_ROOT}/src/sgmmbin:\
 ${KALDI_ROOT}/src/tfrnnlmbin:$PATH
-
-ENV LD_LIBRARY_PATH $KALDI_ROOT/src/lib:$KALDI_ROOT/tools/openfst/lib:$LD_LIBRARY_PATH
 
 CMD ["/bin/bash"]
 
