@@ -8,7 +8,7 @@ If you use this code for your research, please cite our paper:
 @inproceedings{Medennikov_mixup2018,
   author={Ivan Medennikov and Yuri Khokhlov and Aleksei Romanenko and Dmitry Popov and Natalia Tomashenko and Ivan Sorokin and Alexander Zatvornitskiy},
   title={An Investigation of Mixup Training Strategies for Acoustic Models in ASR},
-  year=2018,
+  year=2020,
   booktitle={Proc. Interspeech 2018},
   pages={2903--2907},
   doi={10.21437/Interspeech.2018-2191},
