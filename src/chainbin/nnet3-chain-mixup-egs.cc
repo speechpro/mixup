@@ -1,4 +1,4 @@
-// Copyright 2018 Speech Technology Center www.speechpro.com
+// Copyright 2020 Speech Technology Center www.speechpro.com
 //
 // Licensed under the Apache License, Version 2.0 http://www.apache.org/licenses/LICENSE-2.0
 //
@@ -264,6 +264,8 @@ protected:
     bool swap_scales;
     float scale_boost;
     float scale_eps;
+    bool mix_ivect;
+    bool mix_feats;
     bool max_super;
     int32_t min_shift;
     int32_t max_shift;
@@ -292,6 +294,7 @@ public:
         std::string _mix_mode, const std::string& _distrib,
         NnetChainExampleWriter& _example_writer,
         std::string _scale_fst_algo, bool _swap_scales,
+        bool _mix_ivect, bool _mix_feats,
         bool _max_super, int32_t _min_shift, int32_t _max_shift,
         float _fixed, size_t _buff_size, int32_t _frame_shift,
         bool _compress, bool _test_mode
@@ -327,6 +330,7 @@ ExampleMixer::ExampleMixer(
     std::string _mix_mode, const std::string& _distrib,
     NnetChainExampleWriter& _example_writer,
     std::string _scale_fst_algo, bool _swap_scales,
+    bool _mix_ivect, bool _mix_feats,
     bool _max_super, int32_t _min_shift, int32_t _max_shift,
     float _fixed, size_t _buff_size, int32_t _frame_shift,
     bool _compress, bool _test_mode
@@ -334,6 +338,7 @@ ExampleMixer::ExampleMixer(
     mix_mode(std::move(_mix_mode)), example_writer(_example_writer),
     scale_fst_algo(std::move(_scale_fst_algo)), swap_scales(_swap_scales),
     scale_boost(1.0f), scale_eps(1e-3f),
+    mix_ivect(_mix_ivect), mix_feats(_mix_feats),
     max_super(_max_super), min_shift(_min_shift), max_shift(_max_shift),
     fixed(_fixed), buff_size(_buff_size), frame_shift(_frame_shift),
     exclude_names(), compress(_compress && !_test_mode), test_mode(_test_mode),
@@ -367,6 +372,8 @@ ExampleMixer::ExampleMixer(
     KALDI_LOG << "swap_scales: " << (swap_scales? "yes": "no");
     KALDI_LOG << "scale_boost: " << scale_boost;
     KALDI_LOG << "scale_eps: " << scale_eps;
+    KALDI_LOG << "mix_ivect: " << (mix_ivect? "yes": "no");
+    KALDI_LOG << "mix_feats: " << (mix_feats? "yes": "no");
     KALDI_LOG << "max_super: " << (max_super? "yes": "no");
     if (mix_mode == "shift") {
         KALDI_LOG << "min_shift: " << min_shift;
@@ -380,8 +387,7 @@ ExampleMixer::ExampleMixer(
 }
 
 const std::vector<Index>& ExampleMixer::FindIndexes(const std::string& _name, const std::vector<NnetIo>& _nnet_io) const {
-    for (size_t i = 0; i < _nnet_io.size(); ++i) {
-        const NnetIo& nnet_io = _nnet_io[i];
+    for (const auto & nnet_io : _nnet_io) {
         if (nnet_io.name == _name) {
             if ((nnet_io.indexes.size() != nnet_io.features.NumRows())) {
                 KALDI_ERR << "Data indexes have wrong dimension " << nnet_io.indexes.size() << " (must be " << nnet_io.features.NumRows() << ").";
@@ -393,8 +399,7 @@ const std::vector<Index>& ExampleMixer::FindIndexes(const std::string& _name, co
 }
 
 GeneralMatrix& ExampleMixer::FindFeatures(const std::string& _name, std::vector<NnetIo>& _nnet_io) const {
-    for (size_t i = 0; i < _nnet_io.size(); ++i) {
-        NnetIo& nnet_io = _nnet_io[i];
+    for (auto & nnet_io : _nnet_io) {
         if (nnet_io.name == _name) {
             if ((nnet_io.indexes.size() != nnet_io.features.NumRows())) {
                 KALDI_ERR << "Data indexes have wrong dimension " << nnet_io.indexes.size() << " (must be " << nnet_io.features.NumRows() << ").";
@@ -406,8 +411,7 @@ GeneralMatrix& ExampleMixer::FindFeatures(const std::string& _name, std::vector<
 }
 
 const GeneralMatrix& ExampleMixer::FindFeatures(const std::string& _name, const std::vector<NnetIo>& _nnet_io) const {
-    for (size_t i = 0; i < _nnet_io.size(); ++i) {
-        const NnetIo& nnet_io = _nnet_io[i];
+    for (const auto & nnet_io : _nnet_io) {
         if (nnet_io.name == _name) {
             if ((nnet_io.indexes.size() != nnet_io.features.NumRows())) {
                 KALDI_ERR << "Data indexes have wrong dimension " << nnet_io.indexes.size() << " (must be " << nnet_io.features.NumRows() << ").";
@@ -419,8 +423,7 @@ const GeneralMatrix& ExampleMixer::FindFeatures(const std::string& _name, const 
 }
 
 GeneralMatrix* ExampleMixer::FindIVector(std::vector<NnetIo>& _nnet_io) const {
-    for (size_t i = 0; i < _nnet_io.size(); ++i) {
-        NnetIo& nnet_io = _nnet_io[i];
+    for (auto & nnet_io : _nnet_io) {
         if (nnet_io.name == "ivector") {
             if ((nnet_io.indexes.size() != nnet_io.features.NumRows())) {
                 KALDI_ERR << "I-vector indexes have wrong dimension " << nnet_io.indexes.size() << " (must be " << nnet_io.features.NumRows() << ").";
@@ -428,12 +431,11 @@ GeneralMatrix* ExampleMixer::FindIVector(std::vector<NnetIo>& _nnet_io) const {
             return &nnet_io.features;
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 const GeneralMatrix* ExampleMixer::FindIVector(const std::vector<NnetIo>& _nnet_io) const {
-    for (size_t i = 0; i < _nnet_io.size(); ++i) {
-        const NnetIo& nnet_io = _nnet_io[i];
+    for (const auto & nnet_io : _nnet_io) {
         if (nnet_io.name == "ivector") {
             if ((nnet_io.indexes.size() != nnet_io.features.NumRows())) {
                 KALDI_ERR << "I-vector indexes have wrong dimension " << nnet_io.indexes.size() << " (must be " << nnet_io.features.NumRows() << ").";
@@ -441,7 +443,7 @@ const GeneralMatrix* ExampleMixer::FindIVector(const std::vector<NnetIo>& _nnet_
             return &nnet_io.features;
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 void ExampleMixer::CheckConsistence(const NnetChainExample& _example) const {
@@ -581,7 +583,7 @@ void ExampleMixer::AdmixGlobal(const NnetChainExample& _admixture, float _admx_s
     CheckConsistence(*_example.second, _admixture);
     const float exam_scale = 1.0f - _admx_scale;
     GeneralMatrix* ivector = FindIVector(_example.second->inputs);
-    if (ivector != NULL) {
+    if (mix_ivect && (ivector != nullptr)) {
         KaldiMatrix ivec_main;
         ivector->GetMatrix(&ivec_main);
         ivec_main.Scale(exam_scale);
@@ -593,16 +595,18 @@ void ExampleMixer::AdmixGlobal(const NnetChainExample& _admixture, float _admx_s
             ivector->Compress();
         }
     }
-    GeneralMatrix& features = FindFeatures("input", _example.second->inputs);
-    KaldiMatrix feat_main;
-    features.GetMatrix(&feat_main);
-    feat_main.Scale(exam_scale);
-    KaldiMatrix feat_admx;
-    FindFeatures("input", _admixture.inputs).GetMatrix(&feat_admx);
-    feat_main.AddMat(_admx_scale, feat_admx);
-    features = feat_main;
-    if (compress) {
-        features.Compress();
+    if (mix_feats) {
+        GeneralMatrix &features = FindFeatures("input", _example.second->inputs);
+        KaldiMatrix feat_main;
+        features.GetMatrix(&feat_main);
+        feat_main.Scale(exam_scale);
+        KaldiMatrix feat_admx;
+        FindFeatures("input", _admixture.inputs).GetMatrix(&feat_admx);
+        feat_main.AddMat(_admx_scale, feat_admx);
+        features = feat_main;
+        if (compress) {
+            features.Compress();
+        }
     }
     NnetChainSupervision& exam_nn_sup = _example.second->outputs.front();
     const NnetChainSupervision& admx_nn_sup = _admixture.outputs.front();
@@ -726,16 +730,12 @@ void ExampleMixer::Finish() {
 } }
 
 bool AsBool(const char* _value) {
-    if (_value == NULL) {
+    if (_value == nullptr) {
         KALDI_ERR << "Pointer to bool string is nullptr.";
     }
     std::string value(_value);
     boost::to_lower(value);
-    if ((value == "true") || (value == "yes") || (value == "on") || (value == "1")) {
-        return true;
-    } else {
-        return false;
-    }
+    return (value == "true") || (value == "yes") || (value == "on") || (value == "1");
 }
 
 // --test-mode=true --distrib=uniform:0.1,0.4 --frame-shift=1 ark:/media/work/coding/data/mgb3/train_data/cegs.10.ark ark:/dev/null
@@ -757,6 +757,15 @@ bool AsBool(const char* _value) {
 
 // --frame-shift=1 ark:/mnt/TOSHIBA/khokhlov/coding/mixup_github/temp/cegs.1.ark ark:/dev/null
 
+/*
+
+work dir: /mnt/diskD/khokhlov/temp/mixup
+ark:cegs.33.ark ark:/dev/null
+--mix-ivect=false ark:cegs.33.ark ark:/dev/null
+--mix-feats=false ark:cegs.33.ark ark:/dev/null
+
+*/
+
 int main(int argc, char *argv[]) {
     try {
         using namespace kaldi;
@@ -771,77 +780,91 @@ int main(int argc, char *argv[]) {
 
         std::string mix_mode("global");
         const char* env_var = getenv("MIXUP_MIX_MODE");
-        if (env_var != NULL) {
+        if (env_var != nullptr) {
             mix_mode = env_var;
         }
-        po.Register("mix-mode", &mix_mode, "Mixup mode (\"global\", \"shift\") MIXUP_MIX_MODE");
+        po.Register("mix-mode", &mix_mode, R"(Mixup mode ("global", "shift") MIXUP_MIX_MODE)");
 
         std::string distrib("uniform:0.0,0.5");
         env_var = getenv("MIXUP_DISTRIB");
-        if (env_var != NULL) {
+        if (env_var != nullptr) {
             distrib = env_var;
         }
-        po.Register("distrib", &distrib, "Mixup scaling factors distribution (\"uniform:min,max\", \"beta:alpha\", \"beta2:alpha\") MIXUP_DISTRIB");
+        po.Register("distrib", &distrib, R"(Mixup scaling factors distribution ("uniform:min,max", "beta:alpha", "beta2:alpha") MIXUP_DISTRIB)");
 
         std::string scale_fst_algo;
         env_var = getenv("MIXUP_SCALE_FST_ALGO");
-        if (env_var != NULL) {
+        if (env_var != nullptr) {
             scale_fst_algo = env_var;
         }
-        po.Register("scale-fst-algo", &scale_fst_algo, "Scale supervision FSTs algorithm (\"default[:scale[,eps]]\", \"balanced[:scale[,eps]]\") MIXUP_SCALE_FST_ALGO");
+        po.Register("scale-fst-algo", &scale_fst_algo, R"(Scale supervision FSTs algorithm ("default[:scale[,eps]]", "balanced[:scale[,eps]]") MIXUP_SCALE_FST_ALGO)");
 
         bool swap_scales = false;
         env_var = getenv("MIXUP_SWAP_SCALES");
-        if (env_var != NULL) {
+        if (env_var != nullptr) {
             swap_scales = AsBool(env_var);
         }
         po.Register("swap-scales", &swap_scales, "Swap supervision FST scales MIXUP_SWAP_SCALES");
 
+        bool mix_ivect = true;
+        env_var = getenv("MIXUP_MIX_IVECT");
+        if (env_var != nullptr) {
+            mix_ivect = AsBool(env_var);
+        }
+        po.Register("mix-ivect", &mix_ivect, "Make i-vectors mixtures (MIXUP_MIX_IVECT)");
+
+        bool mix_feats = true;
+        env_var = getenv("MIXUP_MAX_SUPER");
+        if (env_var != nullptr) {
+            mix_feats = AsBool(env_var);
+        }
+        po.Register("mix-feats", &mix_feats, "Make features mixtures (MIXUP_MIX_FEATS)");
+
         bool max_super = false;
         env_var = getenv("MIXUP_MAX_SUPER");
-        if (env_var != NULL) {
+        if (env_var != nullptr) {
             max_super = AsBool(env_var);
         }
         po.Register("max-super", &max_super, "Get supervision from example with maximum scale MIXUP_MAX_SUPER");
 
         int32_t min_shift = 1;
         env_var = getenv("MIXUP_MIN_SHIFT");
-        if (env_var != NULL) {
+        if (env_var != nullptr) {
             min_shift = boost::lexical_cast<int32_t>(env_var);
         }
         po.Register("min-shift", &min_shift, "Minimum sequence shift size (shift mode) MIXUP_MIN_SHIFT");
 
         int32_t max_shift = 3;
         env_var = getenv("MIXUP_MAX_SHIFT");
-        if (env_var != NULL) {
+        if (env_var != nullptr) {
             max_shift = boost::lexical_cast<int32_t>(env_var);
         }
         po.Register("max-shift", &max_shift, "Maximum sequence shift size (shift mode) MIXUP_MAX_SHIFT");
 
         float fixed = 0.10;
         env_var = getenv("MIXUP_FIXED");
-        if (env_var != NULL) {
+        if (env_var != nullptr) {
             fixed = boost::lexical_cast<float>(env_var);
         }
         po.Register("fixed", &fixed, "The portion of the data to leave untouched MIXUP_FIXED");
 
         int32_t buff_size = 500;
         env_var = getenv("MIXUP_BUFF_SIZE");
-        if (env_var != NULL) {
+        if (env_var != nullptr) {
             buff_size = boost::lexical_cast<int32_t>(env_var);
         }
         po.Register("buff-size", &buff_size, "Buffer size for data shuffling (global mode) MIXUP_BUFF_SIZE");
 
         int32_t frame_shift = 0;
         env_var = getenv("MIXUP_FRAME_SHIFT");
-        if (env_var != NULL) {
+        if (env_var != nullptr) {
             frame_shift = boost::lexical_cast<int32_t>(env_var);
         }
         po.Register("frame-shift", &frame_shift, "Allows you to shift time values in the supervision data (excluding iVector data) - useful in augmenting data.  Note, the outputs will remain at the closest exact multiples of the frame subsampling factor MIXUP_FRAME_SHIFT");
 
         int32_t compress = 0;
         env_var = getenv("MIXUP_COMPRESS");
-        if (env_var != NULL) {
+        if (env_var != nullptr) {
             compress = boost::lexical_cast<int32_t>(env_var);
         }
         po.Register("compress", &compress, "Compress features and i-vectors MIXUP_COMPRESS");
@@ -866,7 +889,7 @@ int main(int argc, char *argv[]) {
         NnetChainExampleWriter example_writer(examples_wspecifier);
 
         ExampleMixer mixer(
-            mix_mode, distrib, example_writer, scale_fst_algo, swap_scales, max_super,
+            mix_mode, distrib, example_writer, scale_fst_algo, swap_scales, mix_ivect, mix_feats, max_super,
             min_shift, max_shift, fixed, (size_t) buff_size, frame_shift, compress != 0, test_mode != 0
         );
         size_t num_read = 0;

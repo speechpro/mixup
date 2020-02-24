@@ -1,4 +1,4 @@
-// Copyright 2018 Speech Technology Center www.speechpro.com
+// Copyright 2020 Speech Technology Center www.speechpro.com
 //
 // Licensed under the Apache License, Version 2.0 http://www.apache.org/licenses/LICENSE-2.0
 //
