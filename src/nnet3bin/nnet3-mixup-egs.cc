@@ -30,7 +30,9 @@
 #include <boost/random/uniform_real_distribution.hpp>
 #include <boost/random/beta_distribution.hpp>
 #include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/classification.hpp>
+#include <utility>
 #include "base/kaldi-common.h"
 #include "util/common-utils.h"
 #include "nnet3/nnet-example.h"
@@ -189,7 +191,7 @@ protected:
     double denom;
 
 public:
-    SigmoidTransform(double _k): IScaleTransform(), k(_k), denom(2.0 * std::tanh(_k)) {}
+    explicit SigmoidTransform(double _k): IScaleTransform(), k(_k), denom(2.0 * std::tanh(_k)) {}
     float operator()(float _scale) const override;
 };
 
@@ -233,7 +235,7 @@ ScaleTransform::ScaleTransform(const std::string& _transform): IScaleTransform()
 }
 
 float ScaleTransform::operator()(float _scale) const {
-    if (transform == NULL) {
+    if (transform == nullptr) {
         return _scale;
     } else {
         return (*transform)(_scale);
@@ -304,6 +306,7 @@ protected:
     size_t left_range;
     size_t right_range;
     size_t buff_size;
+    bool mix_labels;
     bool compress;
     bool test_mode;
     rand_gen_t rand_gen;
@@ -327,11 +330,11 @@ protected:
 
 public:
     ExampleMixer(
-        const std::string& _mix_mode, const std::string& _distrib, std::string _transform,
+        std::string _mix_mode, const std::string& _distrib, const std::string& _transform,
         NnetExampleWriter& _example_writer, size_t _min_num, size_t _max_num,
         int32_t _min_shift, int32_t _max_shift, float _fixed_egs, float _fixed_frames,
         size_t _left_range, size_t _right_range, size_t _buff_size,
-        bool _compress, bool _test_mode
+        bool _mix_labels, bool _compress, bool _test_mode
     );
 
 protected:
@@ -359,18 +362,18 @@ public:
 };
 
 ExampleMixer::ExampleMixer(
-    const std::string& _mix_mode, const std::string& _distrib, std::string _transform,
+    std::string _mix_mode, const std::string& _distrib, const std::string& _transform,
     NnetExampleWriter& _example_writer, size_t _min_num, size_t _max_num,
     int32_t _min_shift, int32_t _max_shift, float _fixed_egs, float _fixed_frames,
     size_t _left_range, size_t _right_range, size_t _buff_size,
-    bool _compress, bool _test_mode
+    bool _mix_labels, bool _compress, bool _test_mode
 ):
-    mix_mode(_mix_mode), transform(_transform),
+    mix_mode(std::move(_mix_mode)), transform(_transform),
     example_writer(_example_writer), min_num(_min_num), max_num(_max_num),
     min_shift(_min_shift), max_shift(_max_shift),
     fixed_egs(_fixed_egs), fixed_frames(_fixed_frames),
     left_range(_left_range), right_range(_right_range), buff_size(_buff_size),
-    compress(_compress && !_test_mode), test_mode(_test_mode),
+    mix_labels(_mix_labels), compress(_compress && !_test_mode), test_mode(_test_mode),
     rand_gen(), int_distrib(0, 100000), num_distrib(min_num, max_num),
     shift_distrib(_min_shift, _max_shift), float_distrib(0.0f, 1.0f),
     scale_distrib(rand_gen, _distrib), eg_to_egs(), egs_buffer(),
@@ -396,6 +399,7 @@ ExampleMixer::ExampleMixer(
         KALDI_LOG << "right_range: " << right_range;
     }
     KALDI_LOG << "buff_size: " << buff_size;
+    KALDI_LOG << "mix_labels: " << (mix_labels? "yes": "no");
     KALDI_LOG << "compress: " << (compress? "yes": "no");
     KALDI_LOG << "test_mode: " << (test_mode? "yes": "no");
 }
@@ -436,7 +440,7 @@ GeneralMatrix* ExampleMixer::FindIVector(std::vector<NnetIo>& _nnet_io) const {
             return &nnet_io.features;
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 void ExampleMixer::MixupLocal(ExamplePair& _example) {
@@ -485,8 +489,7 @@ void ExampleMixer::MixupLocal(ExamplePair& _example) {
         mixup_data.at(row_main) = MixupData((int32_t) row_main, row_admx, label_main, label_admx, scale);
         scale_count += scale;
     }
-    for (size_t i = 0; i < mixup_data.size(); ++i) {
-        const MixupData& data = mixup_data[i];
+    for (const auto & data : mixup_data) {
         const KaldiSubVector frame_main(features_org, data.row_main);
         const KaldiSubVector frame_admx(features_org, data.row_admx);
         KaldiSubVector frame_dest(features_mix, data.row_main);
@@ -504,7 +507,7 @@ void ExampleMixer::MixupLocal(ExamplePair& _example) {
             const KaldiSparVector& labls_admx = labels_org.Row(data.label_admx);
             for (int32_t j = 0; j < labls_admx.NumElements(); ++j) {
                 const label_t& label = labls_admx.GetElement(j);
-                labels_t::iterator iter = labels.find(label.first);
+                auto iter = labels.find(label.first);
                 if (iter == labels.end()) {
                     labels.insert(std::make_pair(label.first, data.scale * label.second));
                 } else {
@@ -524,8 +527,7 @@ void ExampleMixer::MixupLocal(ExamplePair& _example) {
         {
             KaldiMatrix feats_mix;
             FindFeatures("input", _example.second->io).GetMatrix(&feats_mix);
-            for (size_t i = 0; i < mixup_data.size(); ++i) {
-                const MixupData &data = mixup_data[i];
+            for (const auto & data : mixup_data) {
                 KaldiVector row_main(test_feats_org.Row(data.row_main));
                 KaldiVector row_admx(test_feats_org.Row(data.row_admx));
                 row_main.Scale(1.0f - data.scale);
@@ -540,8 +542,7 @@ void ExampleMixer::MixupLocal(ExamplePair& _example) {
         {
             KaldiMatrix labels_mix;
             FindFeatures("output", _example.second->io).GetMatrix(&labels_mix);
-            for (size_t i = 0; i < mixup_data.size(); ++i) {
-                const MixupData &data = mixup_data[i];
+            for (const auto & data : mixup_data) {
                 if (data.label_main < 0) {
                     continue;
                 }
@@ -572,13 +573,13 @@ void ExampleMixer::AdmixGlobal(const std::vector<float>& _adm_scales, const std:
     KaldiMatrix test_labels_org;
     if (test_mode) {
         FindFeatures("input", _example.second->io).GetMatrix(&test_feats_org);
-        if (FindIVector(_example.second->io) != NULL) {
+        if (FindIVector(_example.second->io) != nullptr) {
             FindIVector(_example.second->io)->GetMatrix(&test_ivect_org);
         }
         FindFeatures("output", _example.second->io).GetMatrix(&test_labels_org);
     }
     GeneralMatrix* ivector = FindIVector(_example.second->io);
-    if (ivector != NULL) {
+    if (ivector != nullptr) {
         KaldiMatrix ivec_main;
         ivector->GetMatrix(&ivec_main);
         ivec_main.Scale(_exam_scale);
@@ -607,41 +608,43 @@ void ExampleMixer::AdmixGlobal(const std::vector<float>& _adm_scales, const std:
     }
     float exam_scale = transform(_exam_scale);
     std::vector<float> adm_scales(_adm_scales);
-    for (size_t i = 0; i < adm_scales.size(); ++i) {
-        adm_scales.at(i) = transform(adm_scales.at(i));
+    for (float & adm_scale : adm_scales) {
+        adm_scale = transform(adm_scale);
     }
     const float scale_norm = std::accumulate(adm_scales.begin(), adm_scales.end(), exam_scale);
     exam_scale /= scale_norm;
     std::transform(adm_scales.begin(), adm_scales.end(), adm_scales.begin(), [scale_norm](float _value) -> float { return _value / scale_norm; });
-    GeneralMatrix& labels = FindFeatures("output", _example.second->io);
-    KaldiSparMatrix labels_main(labels.GetSparseMatrix());
-    labels_main.Scale(exam_scale);
-    for (size_t i = 0; i < adm_scales.size(); ++i) {
-        KaldiSparMatrix labels_admx(FindFeatures("output", _admixtures[i]->io).GetSparseMatrix());
-        labels_admx.Scale(adm_scales[i]);
-        for (int32_t j = 0; j < labels_main.NumRows(); ++j) {
-            typedef std::pair<int32_t, float> label_t;
-            typedef std::map<int32_t, float> labels_t;
-            labels_t lab_set;
-            const KaldiSparVector& lab_main = labels_main.Row(j);
-            for (int32_t k = 0; k < lab_main.NumElements(); ++k) {
-                lab_set.insert(lab_main.GetElement(k));
-            }
-            const KaldiSparVector& lab_admx = labels_admx.Row(j);
-            for (int32_t k = 0; k < lab_admx.NumElements(); ++k) {
-                const label_t& label = lab_admx.GetElement(k);
-                labels_t::iterator iter = lab_set.find(label.first);
-                if (iter == lab_set.end()) {
-                    lab_set.insert(label);
-                } else {
-                    iter->second += label.second;
+    if (mix_labels) {
+        GeneralMatrix &labels = FindFeatures("output", _example.second->io);
+        KaldiSparMatrix labels_main(labels.GetSparseMatrix());
+        labels_main.Scale(exam_scale);
+        for (size_t i = 0; i < adm_scales.size(); ++i) {
+            KaldiSparMatrix labels_admx(FindFeatures("output", _admixtures[i]->io).GetSparseMatrix());
+            labels_admx.Scale(adm_scales[i]);
+            for (int32_t j = 0; j < labels_main.NumRows(); ++j) {
+                typedef std::pair<int32_t, float> label_t;
+                typedef std::map<int32_t, float> labels_t;
+                labels_t lab_set;
+                const KaldiSparVector &lab_main = labels_main.Row(j);
+                for (int32_t k = 0; k < lab_main.NumElements(); ++k) {
+                    lab_set.insert(lab_main.GetElement(k));
                 }
+                const KaldiSparVector &lab_admx = labels_admx.Row(j);
+                for (int32_t k = 0; k < lab_admx.NumElements(); ++k) {
+                    const label_t &label = lab_admx.GetElement(k);
+                    auto iter = lab_set.find(label.first);
+                    if (iter == lab_set.end()) {
+                        lab_set.insert(label);
+                    } else {
+                        iter->second += label.second;
+                    }
+                }
+                KaldiSparVector labls_dest(labels_main.NumCols(), std::vector<label_t>(lab_set.begin(), lab_set.end()));
+                labels_main.SetRow(j, labls_dest);
             }
-            KaldiSparVector labls_dest(labels_main.NumCols(), std::vector<label_t>(lab_set.begin(), lab_set.end()));
-            labels_main.SetRow(j, labls_dest);
         }
+        labels = labels_main;
     }
-    labels = labels_main;
     scale_count += 1.0 - _exam_scale;
     adnum_count += _adm_scales.size();
     if (test_mode) {
@@ -657,7 +660,7 @@ void ExampleMixer::AdmixGlobal(const std::vector<float>& _adm_scales, const std:
             const float value = std::max(std::fabs(feats_res.Max()), std::fabs(feats_res.Min())) / _adm_scales.size();
             KALDI_ASSERT(value < 1e-5);
         }
-        if (ivector != NULL) {
+        if (ivector != nullptr) {
             KaldiMatrix ivect_res;
             FindIVector(_example.second->io)->GetMatrix(&ivect_res);
             ivect_res.AddMat(-_exam_scale, test_ivect_org);
@@ -795,9 +798,9 @@ void ExampleMixer::FlushClass(egs_buffer_t& _buffer) {
             class_iter->second.emplace_back(std::make_pair(matrix.Row((MatrixIndexT) j), &spvect));
         }
     }
-    for (size_t i = 0; i < _buffer.size(); ++i) {
+    for (auto & pair : _buffer) {
         if (float_distrib(rand_gen) > fixed_egs) {
-            NnetExample& example = *_buffer[i].second;
+            NnetExample& example = *pair.second;
             const std::vector<Index>& in_indx = FindIndexes("input", example.io);
             GeneralMatrix& gen_matrix = FindFeatures("input", example.io);
             KaldiMatrix matrix;
@@ -807,8 +810,7 @@ void ExampleMixer::FlushClass(egs_buffer_t& _buffer) {
             KaldiSparMatrix labels = gen_labels.GetSparseMatrix();
             int32_t last_label = -1;
             auto class_iter = frame_map.end();
-            for (size_t j = 0; j < in_indx.size(); ++j) {
-                const Index& indx = in_indx[j];
+            for (auto indx : in_indx) {
                 if ((indx.t < 0) || (indx.t >= labels.NumRows())) {
                     continue;
                 }
@@ -874,7 +876,7 @@ void ExampleMixer::FlushClass(egs_buffer_t& _buffer) {
         } else {
             ++num_untouched;
         }
-        const ExamplePair& example = _buffer.at(i);
+        const ExamplePair& example = pair;
         example_writer.Write(example.first, *example.second);
         ++num_wrote;
     }
@@ -1004,6 +1006,15 @@ void ExampleMixer::Finish() {
 
 } }
 
+bool AsBool(const char* _value) {
+    if (_value == nullptr) {
+        KALDI_ERR << "Pointer to bool string is nullptr.";
+    }
+    std::string value(_value);
+    boost::to_lower(value);
+    return (value == "true") || (value == "yes") || (value == "on") || (value == "1");
+}
+
 // --mix_mode=local ark:/media/work/coding/data/mgb3/train_data/egs.479.ark ark:/dev/null
 // --mix_mode=global ark:/media/work/coding/data/mgb3/train_data/egs.479.ark ark:/dev/null
 // --test_mode=1 --mix_mode=global ark:/media/work/coding/data/mgb3/train_data/cegs.10.ark ark:/dev/null
@@ -1028,6 +1039,15 @@ void ExampleMixer::Finish() {
 
 // --test_mode=1 --mix_mode=shift --min-shift=2 --max-shift=5 --distrib=uniform:0.1,0.7 ark:/mnt/TOSHIBA/khokhlov/coding/temp/i-vect/temp/mixup/egs.100.ark ark,t:/mnt/TOSHIBA/khokhlov/coding/temp/i-vect/temp/mixup/egs.100.mix.ark
 
+/*
+
+work dir: /mnt/diskD/khokhlov/temp/mixup
+ark:egs.112.ark ark:/dev/null
+--mix-labels=true ark:egs.112.ark ark:/dev/null
+--mix-labels=false ark:egs.112.ark ark:/dev/null
+
+*/
+
 int main(int argc, char *argv[]) {
     try {
         using namespace kaldi;
@@ -1042,96 +1062,103 @@ int main(int argc, char *argv[]) {
 
         std::string mix_mode("global");
         const char* env_var = getenv("MIXUP_MIX_MODE");
-        if (env_var != NULL) {
+        if (env_var != nullptr) {
             mix_mode = env_var;
         }
-        po.Register("mix-mode", &mix_mode, "Mixup mode (\"local\", \"global\", \"class\", \"shift\") MIXUP_MIX_MODE");
+        po.Register("mix-mode", &mix_mode, R"(Mixup mode ("local", "global", "class", "shift") MIXUP_MIX_MODE)");
 
         std::string distrib("uniform:0.0,0.5");
         env_var = getenv("MIXUP_DISTRIB");
-        if (env_var != NULL) {
+        if (env_var != nullptr) {
             distrib = env_var;
         }
-        po.Register("distrib", &distrib, "Mixup scaling factors distribution (\"uniform:min,max\", \"beta:alpha\", \"beta2:alpha\") MIXUP_DISTRIB");
+        po.Register("distrib", &distrib, R"(Mixup scaling factors distribution ("uniform:min,max", "beta:alpha", "beta2:alpha") MIXUP_DISTRIB)");
 
         std::string transform;
         env_var = getenv("MIXUP_TRANSFORM");
-        if (env_var != NULL) {
+        if (env_var != nullptr) {
             transform = env_var;
         }
         po.Register("transform", &transform, "Mixup scaling factor transform function for labels (\"sigmoid:k\") MIXUP_TRANSFORM");
 
         int32_t min_num = 1;
         env_var = getenv("MIXUP_MIN_NUM");
-        if (env_var != NULL) {
+        if (env_var != nullptr) {
             min_num = boost::lexical_cast<int32_t>(env_var);
         }
         po.Register("min-num", &min_num, "Minimum number of admixtures MIXUP_MIN_NUM");
 
         int32_t max_num = 1;
         env_var = getenv("MIXUP_MAX_NUM");
-        if (env_var != NULL) {
+        if (env_var != nullptr) {
             max_num = boost::lexical_cast<int32_t>(env_var);
         }
         po.Register("max-num", &max_num, "Maximum number of admixtures MIXUP_MAX_NUM");
 
         int32_t min_shift = 1;
         env_var = getenv("MIXUP_MIN_SHIFT");
-        if (env_var != NULL) {
+        if (env_var != nullptr) {
             min_shift = boost::lexical_cast<int32_t>(env_var);
         }
         po.Register("min-shift", &min_shift, "Minimum sequence shift size (shift mode) MIXUP_MIN_SHIFT");
 
         int32_t max_shift = 3;
         env_var = getenv("MIXUP_MAX_SHIFT");
-        if (env_var != NULL) {
+        if (env_var != nullptr) {
             max_shift = boost::lexical_cast<int32_t>(env_var);
         }
         po.Register("max-shift", &max_shift, "Maximum sequence shift size (shift mode) MIXUP_MAX_SHIFT");
 
         float fixed_egs = 0.10;
         env_var = getenv("MIXUP_FIXED_EGS");
-        if (env_var != NULL) {
+        if (env_var != nullptr) {
             fixed_egs = boost::lexical_cast<float>(env_var);
         }
         po.Register("fixed-egs", &fixed_egs, "Portion of examples to leave untouched MIXUP_FIXED_EGS");
 
         float fixed_frames = 0.10;
         env_var = getenv("MIXUP_FIXED_FRAMES");
-        if (env_var != NULL) {
+        if (env_var != nullptr) {
             fixed_frames = boost::lexical_cast<float>(env_var);
         }
         po.Register("fixed-frames", &fixed_frames, "Portion of frames to leave untouched MIXUP_FIXED_FRAMES");
 
         int32_t left_range = 3;
         env_var = getenv("MIXUP_LEFT_RANGE");
-        if (env_var != NULL) {
+        if (env_var != nullptr) {
             left_range = boost::lexical_cast<int32_t>(env_var);
         }
         po.Register("left-range", &left_range, "Left range to pick an admixture frame (local mode) MIXUP_LEFT_RANGE");
 
         int32_t right_range = 3;
         env_var = getenv("MIXUP_RIGHT_RANGE");
-        if (env_var != NULL) {
+        if (env_var != nullptr) {
             right_range = boost::lexical_cast<int32_t>(env_var);
         }
         po.Register("right-range", &right_range, "Right range to pick an admixture frame (local mode) MIXUP_RIGHT_RANGE");
 
         int32_t buff_size = 500;
         env_var = getenv("MIXUP_BUFF_SIZE");
-        if (env_var != NULL) {
+        if (env_var != nullptr) {
             buff_size = boost::lexical_cast<int32_t>(env_var);
         }
         po.Register("buff-size", &buff_size, "Buffer size for data shuffling (global mode) MIXUP_BUFF_SIZE");
 
-        int32_t compress = 0;
+        bool mix_labels = true;
+        env_var = getenv("MIXUP_MIX_LABELS");
+        if (env_var != nullptr) {
+            mix_labels = AsBool(env_var);
+        }
+        po.Register("mix-labels", &mix_labels, "Make labels mixtures (MIXUP_MIX_LABELS)");
+
+        bool compress = false;
         env_var = getenv("MIXUP_COMPRESS");
-        if (env_var != NULL) {
-            compress = boost::lexical_cast<int32_t>(env_var);
+        if (env_var != nullptr) {
+            compress = AsBool(env_var);
         }
         po.Register("compress", &compress, "Compress features and i-vectors MIXUP_COMPRESS");
 
-        int32_t test_mode = 0;
+        bool test_mode = false;
         po.Register("test-mode", &test_mode, "Self testing mode");
 
         po.Read(argc, argv);
@@ -1162,7 +1189,7 @@ int main(int argc, char *argv[]) {
         ExampleMixer mixer(
             mix_mode, distrib, transform, example_writer, (size_t) min_num, (size_t) max_num,
             min_shift, max_shift, fixed_egs, fixed_frames, (size_t) left_range,
-            (size_t) right_range, (size_t) buff_size, compress != 0, test_mode != 0
+            (size_t) right_range, (size_t) buff_size, mix_labels, compress, test_mode
         );
         size_t num_read = 0;
         for (; !example_reader.Done(); example_reader.Next(), num_read++) {

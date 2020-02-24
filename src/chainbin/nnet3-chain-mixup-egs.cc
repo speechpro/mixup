@@ -22,11 +22,7 @@
 
 #include <limits>
 #include <algorithm>
-#include <fst/fstlib.h>
 #include <fst/union.h>
-#include <fst/determinize.h>
-#include <fst/minimize.h>
-#include <fst/rmepsilon.h>
 #include <fst/topsort.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/format.hpp>
@@ -37,7 +33,6 @@
 #include <boost/random/beta_distribution.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
-#include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include "base/kaldi-common.h"
 #include "util/common-utils.h"
