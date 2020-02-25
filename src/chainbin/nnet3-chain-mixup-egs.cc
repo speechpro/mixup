@@ -809,7 +809,7 @@ int main(int argc, char *argv[]) {
         po.Register("mix-ivect", &mix_ivect, "Make i-vectors mixtures (MIXUP_MIX_IVECT)");
 
         bool mix_feats = true;
-        env_var = getenv("MIXUP_MAX_SUPER");
+        env_var = getenv("MIXUP_MIX_FEATS");
         if (env_var != nullptr) {
             mix_feats = AsBool(env_var);
         }

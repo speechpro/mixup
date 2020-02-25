@@ -306,6 +306,8 @@ protected:
     size_t left_range;
     size_t right_range;
     size_t buff_size;
+    bool mix_ivect;
+    bool mix_feats;
     bool mix_labels;
     bool compress;
     bool test_mode;
@@ -334,7 +336,7 @@ public:
         NnetExampleWriter& _example_writer, size_t _min_num, size_t _max_num,
         int32_t _min_shift, int32_t _max_shift, float _fixed_egs, float _fixed_frames,
         size_t _left_range, size_t _right_range, size_t _buff_size,
-        bool _mix_labels, bool _compress, bool _test_mode
+        bool _mix_ivect, bool _mix_feats, bool _mix_labels, bool _compress, bool _test_mode
     );
 
 protected:
@@ -366,14 +368,15 @@ ExampleMixer::ExampleMixer(
     NnetExampleWriter& _example_writer, size_t _min_num, size_t _max_num,
     int32_t _min_shift, int32_t _max_shift, float _fixed_egs, float _fixed_frames,
     size_t _left_range, size_t _right_range, size_t _buff_size,
-    bool _mix_labels, bool _compress, bool _test_mode
+    bool _mix_ivect, bool _mix_feats, bool _mix_labels, bool _compress, bool _test_mode
 ):
     mix_mode(std::move(_mix_mode)), transform(_transform),
     example_writer(_example_writer), min_num(_min_num), max_num(_max_num),
     min_shift(_min_shift), max_shift(_max_shift),
     fixed_egs(_fixed_egs), fixed_frames(_fixed_frames),
     left_range(_left_range), right_range(_right_range), buff_size(_buff_size),
-    mix_labels(_mix_labels), compress(_compress && !_test_mode), test_mode(_test_mode),
+    mix_ivect(_mix_ivect), mix_feats(_mix_feats), mix_labels(_mix_labels),
+    compress(_compress && !_test_mode), test_mode(_test_mode),
     rand_gen(), int_distrib(0, 100000), num_distrib(min_num, max_num),
     shift_distrib(_min_shift, _max_shift), float_distrib(0.0f, 1.0f),
     scale_distrib(rand_gen, _distrib), eg_to_egs(), egs_buffer(),
@@ -399,6 +402,8 @@ ExampleMixer::ExampleMixer(
         KALDI_LOG << "right_range: " << right_range;
     }
     KALDI_LOG << "buff_size: " << buff_size;
+    KALDI_LOG << "mix_ivect: " << (mix_ivect? "yes": "no");
+    KALDI_LOG << "mix_feats: " << (mix_feats? "yes": "no");
     KALDI_LOG << "mix_labels: " << (mix_labels? "yes": "no");
     KALDI_LOG << "compress: " << (compress? "yes": "no");
     KALDI_LOG << "test_mode: " << (test_mode? "yes": "no");
@@ -579,7 +584,7 @@ void ExampleMixer::AdmixGlobal(const std::vector<float>& _adm_scales, const std:
         FindFeatures("output", _example.second->io).GetMatrix(&test_labels_org);
     }
     GeneralMatrix* ivector = FindIVector(_example.second->io);
-    if (ivector != nullptr) {
+    if (mix_ivect && (ivector != nullptr)) {
         KaldiMatrix ivec_main;
         ivector->GetMatrix(&ivec_main);
         ivec_main.Scale(_exam_scale);
@@ -593,18 +598,20 @@ void ExampleMixer::AdmixGlobal(const std::vector<float>& _adm_scales, const std:
             ivector->Compress();
         }
     }
-    GeneralMatrix& features = FindFeatures("input", _example.second->io);
-    KaldiMatrix feat_main;
-    features.GetMatrix(&feat_main);
-    feat_main.Scale(_exam_scale);
-    for (size_t i = 0; i < _adm_scales.size(); ++i) {
-        KaldiMatrix feat_admx;
-        FindFeatures("input", _admixtures[i]->io).GetMatrix(&feat_admx);
-        feat_main.AddMat(_adm_scales[i], feat_admx);
-    }
-    features = feat_main;
-    if (compress) {
-        features.Compress();
+    if (mix_feats) {
+        GeneralMatrix &features = FindFeatures("input", _example.second->io);
+        KaldiMatrix feat_main;
+        features.GetMatrix(&feat_main);
+        feat_main.Scale(_exam_scale);
+        for (size_t i = 0; i < _adm_scales.size(); ++i) {
+            KaldiMatrix feat_admx;
+            FindFeatures("input", _admixtures[i]->io).GetMatrix(&feat_admx);
+            feat_main.AddMat(_adm_scales[i], feat_admx);
+        }
+        features = feat_main;
+        if (compress) {
+            features.Compress();
+        }
     }
     float exam_scale = transform(_exam_scale);
     std::vector<float> adm_scales(_adm_scales);
@@ -1043,6 +1050,8 @@ bool AsBool(const char* _value) {
 
 work dir: /mnt/diskD/khokhlov/temp/mixup
 ark:egs.112.ark ark:/dev/null
+--mix-ivect=false ark:egs.112.ark ark:/dev/null
+--mix-feats=false ark:egs.112.ark ark:/dev/null
 --mix-labels=true ark:egs.112.ark ark:/dev/null
 --mix-labels=false ark:egs.112.ark ark:/dev/null
 
@@ -1144,6 +1153,20 @@ int main(int argc, char *argv[]) {
         }
         po.Register("buff-size", &buff_size, "Buffer size for data shuffling (global mode) MIXUP_BUFF_SIZE");
 
+        bool mix_ivect = true;
+        env_var = getenv("MIXUP_MIX_IVECT");
+        if (env_var != nullptr) {
+            mix_ivect = AsBool(env_var);
+        }
+        po.Register("mix-ivect", &mix_ivect, "Make i-vectors mixtures (MIXUP_MIX_IVECT)");
+
+        bool mix_feats = true;
+        env_var = getenv("MIXUP_MIX_FEATS");
+        if (env_var != nullptr) {
+            mix_feats = AsBool(env_var);
+        }
+        po.Register("mix-feats", &mix_feats, "Make features mixtures (MIXUP_MIX_FEATS)");
+
         bool mix_labels = true;
         env_var = getenv("MIXUP_MIX_LABELS");
         if (env_var != nullptr) {
@@ -1188,8 +1211,8 @@ int main(int argc, char *argv[]) {
 
         ExampleMixer mixer(
             mix_mode, distrib, transform, example_writer, (size_t) min_num, (size_t) max_num,
-            min_shift, max_shift, fixed_egs, fixed_frames, (size_t) left_range,
-            (size_t) right_range, (size_t) buff_size, mix_labels, compress, test_mode
+            min_shift, max_shift, fixed_egs, fixed_frames, (size_t) left_range, (size_t) right_range,
+            (size_t) buff_size, mix_ivect, mix_feats, mix_labels, compress, test_mode
         );
         size_t num_read = 0;
         for (; !example_reader.Done(); example_reader.Next(), num_read++) {
