@@ -664,13 +664,21 @@ void ExampleMixer::AdmixGlobal(const std::vector<float>& _adm_scales, const std:
     if (mix_labels) {
         GeneralMatrix &labels = FindFeatures("output", _example.second->io);
         KaldiSparMatrix labels_main(labels.GetSparseMatrix());
+        std::vector<float> row_wght((size_t) labels_main.NumRows(), 0.0f);
+        for (int32_t j = 0; j < labels_main.NumRows(); ++j) {
+            auto& wght = row_wght[j];
+            const KaldiSparVector &lab_main = labels_main.Row(j);
+            for (int32_t k = 0; k < lab_main.NumElements(); ++k) {
+                wght += lab_main.GetElement(k).second;
+            }
+        }
         labels_main.Scale(exam_scale);
+        typedef std::pair<int32_t, float> label_t;
+        typedef std::map<int32_t, float> labels_t;
         for (size_t i = 0; i < adm_scales.size(); ++i) {
             KaldiSparMatrix labels_admx(FindFeatures("output", _admixtures[i]->io).GetSparseMatrix());
             labels_admx.Scale(adm_scales[i]);
             for (int32_t j = 0; j < labels_main.NumRows(); ++j) {
-                typedef std::pair<int32_t, float> label_t;
-                typedef std::map<int32_t, float> labels_t;
                 labels_t lab_set;
                 const KaldiSparVector &lab_main = labels_main.Row(j);
                 for (int32_t k = 0; k < lab_main.NumElements(); ++k) {
@@ -682,6 +690,7 @@ void ExampleMixer::AdmixGlobal(const std::vector<float>& _adm_scales, const std:
                     if (!labels_map.empty()) {
                         label.first = labels_map(label.first);
                     }
+                    label.second *= row_wght.at((size_t) j);
                     auto iter = lab_set.find(label.first);
                     if (iter == lab_set.end()) {
                         lab_set.insert(label);
@@ -692,6 +701,22 @@ void ExampleMixer::AdmixGlobal(const std::vector<float>& _adm_scales, const std:
                 KaldiSparVector labls_dest(labels_main.NumCols(), std::vector<label_t>(lab_set.begin(), lab_set.end()));
                 labels_main.SetRow(j, labls_dest);
             }
+        }
+        for (int32_t j = 0; j < labels_main.NumRows(); ++j) {
+            labels_t lab_set;
+            float scale = 0.0f;
+            const KaldiSparVector &lab_main = labels_main.Row(j);
+            for (int32_t k = 0; k < lab_main.NumElements(); ++k) {
+                auto& label = lab_main.GetElement(k);
+                scale += label.second;
+                lab_set.insert(label);
+            }
+            scale = row_wght[j] / scale;
+            for (auto& label : lab_set) {
+                label.second *= scale;
+            }
+            KaldiSparVector labls_dest(labels_main.NumCols(), std::vector<label_t>(lab_set.begin(), lab_set.end()));
+            labels_main.SetRow(j, labls_dest);
         }
         labels = labels_main;
     }
@@ -1098,6 +1123,7 @@ ark:egs.112.ark ark:/dev/null
 --mix-labels=true ark:egs.112.ark ark:/dev/null
 --mix-labels=false ark:egs.112.ark ark:/dev/null
 --labels-map=1:2 ark:egs.112.ark ark:/dev/null
+--labels-map=1:2 ark:valid.ark ark,t:valid.txt
 
 */
 
